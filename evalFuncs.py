@@ -24,7 +24,11 @@ def evalhalf01(individual):
 
     return score,
 
-def evalIDS(individual):
+def evaliIDS(individual):
    score = 0.0
 
    return score,
+
+def evalIDS(individual):
+  fitness = 0.5
+  return fitness,

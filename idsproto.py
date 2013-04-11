@@ -145,23 +145,21 @@ uniq_all.append(uniq_attack)
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
+#print creator.FitnessMax((1.0,))
 
 toolbox = base.Toolbox()
 # Attribute generator
 toolbox.register("attr_bool", random.randint, 0, 1)
 
-#---randomizor
-
-#import bisect #moved to top
+#---randomizor and chromosomizor
 
 def randomizor(breakpoints,items):
     score = random.random() * breakpoints[-1]
     i = bisect.bisect(breakpoints, score)
     return items[i]
 
-an_individual = []
-
 def chromosomizor():
+    an_individual = []
     for i, j in enumerate(uniq_all):
         weight = {-1:0.1}
         for u in uniq_all[i]:
@@ -174,52 +172,47 @@ def chromosomizor():
             mysum += weight[i]
             breakpoints.append(mysum)
 
-        print weight 
+        #print weight 
         an_individual.append(randomizor(breakpoints,items))
 
-chromosomizor()
-print an_individual
+    return an_individual
 
-# ****** DOES NOT WORK YET
-#toolbox.register("attr_chromosomizor", chromosomizor, n_inds)
-
+#print chromosomizor()
 
 # Structure initializers
+toolbox.register("attr_chromosomizor", chromosomizor)
+toolbox.register("individual", tools.initIterate,
+                creator.Individual, toolbox.attr_chromosomizor)
 
-# ****** DOES NOT WORK YET
-#toolbox.register("individual", tools.initIterate, creator.Individual,
-#                    toolbox.attr_chromosomizor)
+toolbox.register("population", tools.initRepeat,
+                    list, toolbox.individual)
 
-
-toolbox.register("individual", tools.initRepeat, creator.Individual, 
-   toolbox.attr_bool, n_inds)
-
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+#END III -----------------------------------------------------------------
 
 #-------Evaluation Functions---------------------------
 # imported evalFuncs.py
 #-------------------------------------------------------   
 
 # Operator registering
-toolbox.register("evaluate", evalhalf01)
+toolbox.register("evaluate", evalIDS) #needs to be changed to evalIDS
 toolbox.register("mate", tools.cxTwoPoints)
 toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
 toolbox.register("select", tools.selTournament, tournsize=3)
 
 def main():
     #random.seed(64)
-    
     pop = toolbox.population(n=n_pop)
     for i in pop:
-      print pop.index(i), i
+        print pop.index(i), i
 
 
-    CXPB, MUTPB, NGEN = 0.5, 0.2, 5000
+    CXPB, MUTPB, NGEN = 0.5, 0.2, 50
     
     print("Start of evolution")
     
     # Evaluate the entire population
     fitnesses = list(map(toolbox.evaluate, pop))
+    print fitnesses
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
     
@@ -227,7 +220,7 @@ def main():
     
     # Begin the evolution
     for g in range(NGEN):
-        print("-- Generation %i --" % g)
+#        print("-- Generation %i --" % g)
         
         # Select the next generation individuals
         offspring = toolbox.select(pop, len(pop))
@@ -252,7 +245,7 @@ def main():
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
         
-        print("  Evaluated %i individuals" % len(invalid_ind))
+#        print("  Evaluated %i individuals" % len(invalid_ind))
         
         # The population is entirely replaced by the offspring
         pop[:] = offspring
@@ -267,18 +260,18 @@ def main():
         mx = float(max(fits))
         mxp = (mx*100) / n_inds
 
-        print("  genes %s" % n_inds)
-        print("  chromosomes %s" % n_pop)
-        print("  Min %s" % min(fits))
-        print("  Max %s" % max(fits))
-        print("  mxp %.3f %%" % mxp)
-        print("  Avg %s" % mean)
-        print("  Std %s" % std)
+#        print("  genes %s" % n_inds)
+#        print("  chromosomes %s" % n_pop)
+#        print("  Min %s" % min(fits))
+#        print("  Max %s" % max(fits))
+#        print("  mxp %.3f %%" % mxp)
+#        print("  Avg %s" % mean)
+#        print("  Std %s" % std)
 
         if max(fits) == n_inds:
             break
     
-    print("-- End of (as NGEN set) evolution --")
+#    print("-- End of (as NGEN set) evolution --")
     
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
@@ -286,5 +279,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-print an_individual
+#print 'gog', an_individual
+#run line below in bash for now to view generated individuals
+#for i in {1..100}; do echo $i; python idsproto.py | grep gog ; done;
 print "Took: ", time()-start_time, " seconds"

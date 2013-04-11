@@ -12,7 +12,7 @@ start_time = time()
 
 #------Modifiable values (notable ones)----------------
 n_inds = 15 # Number of genes in each chromosome
-n_pop  = 500 # Number of chromosomes in each genome
+n_pop  = 10 # Number of chromosomes in each genome
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -154,41 +154,46 @@ toolbox.register("attr_bool", random.randint, 0, 1)
 
 #import bisect #moved to top
 
-weight = {-1:0.1,21:0.45,22:0.45}
-items = weight.keys()
-mysum = 0
-breakpoints = [] 
-for i in items:
-    mysum += weight[i]
-    breakpoints.append(mysum)
-
-def getitem(breakpoints,items):
+def randomizor(breakpoints,items):
     score = random.random() * breakpoints[-1]
     i = bisect.bisect(breakpoints, score)
     return items[i]
 
-for i, j in enumerate(uniq_all):
-    weight = {-1:0.1}
-    for u in uniq_all[i]:
-        weight[u] = 0.9/len(uniq_all[i])
+an_individual = []
 
-    items = weight.keys()
-    mysum = 0
-    breakpoints = []
-    for i in items:
-        mysum += weight[i]
-        breakpoints.append(mysum)
+def chromosomizor():
+    for i, j in enumerate(uniq_all):
+        weight = {-1:0.1}
+        for u in uniq_all[i]:
+            weight[u] = 0.9/len(uniq_all[i])
 
-    print weight 
-    print getitem(breakpoints,items)
+        items = weight.keys()
+        mysum = 0
+        breakpoints = []
+        for i in items:
+            mysum += weight[i]
+            breakpoints.append(mysum)
 
-#toolbox.register("attr_randomizor", )
+        print weight 
+        an_individual.append(randomizor(breakpoints,items))
+
+chromosomizor()
+print an_individual
+
+# ****** DOES NOT WORK YET
+#toolbox.register("attr_chromosomizor", chromosomizor, n_inds)
 
 
 # Structure initializers
 
+# ****** DOES NOT WORK YET
+#toolbox.register("individual", tools.initIterate, creator.Individual,
+#                    toolbox.attr_chromosomizor)
+
+
 toolbox.register("individual", tools.initRepeat, creator.Individual, 
-    toolbox.attr_bool, n_inds)
+   toolbox.attr_bool, n_inds)
+
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
 #-------Evaluation Functions---------------------------
@@ -281,4 +286,5 @@ def main():
 if __name__ == "__main__":
     main()
 
+print an_individual
 print "Took: ", time()-start_time, " seconds"

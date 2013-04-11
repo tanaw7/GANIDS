@@ -1,5 +1,6 @@
 import random
 import fileinput
+import bisect
 from time import time
 from evalFuncs import *
 
@@ -10,7 +11,7 @@ from deap import tools
 start_time = time()
 
 #------Modifiable values (notable ones)----------------
-n_inds = 20 # Number of genes in each chromosome
+n_inds = 15 # Number of genes in each chromosome
 n_pop  = 500 # Number of chromosomes in each genome
 #------------------------------------------------------
 
@@ -55,10 +56,7 @@ for line in fileinput.input(['bsm.list']):
 
 
     auditData.append(line)
-#--------------------------------------------------------------
-
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMax)
+#END I--------------------------------------------------------------
 
 # unique ports should be taken from the input auditData[] list
 uniq_srcporttest = [ 22, 1023, 44, 550, 8080, -1] # example (-1 is a wildcard)
@@ -136,23 +134,56 @@ uniq_all.append(uniq_desip_3rdoct)
 uniq_all.append(uniq_desip_4thoct)
 uniq_all.append(uniq_attack)
 
-#---------------------------------------------------------------
+#for i in uniq_all: #--- decide if we should add -1 to the uniq(s)
+#    i.insert(0, -1)#--- or should we add it in the generator function
+
+
+#END II----------------------------------------------------------------
+
+#-III -----Generate population: Build randomizor for each field in a 
+#-chromosome--------------------------------------------------------
+
+creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
 # Attribute generator
 toolbox.register("attr_bool", random.randint, 0, 1)
-toolbox.register("attr_255", random.randint, 0, 255)
-toolbox.register("attr_65535", random.randint, 0, 65535)
-toolbox.register("attr_hour", random.randint, 0, 65535)
-toolbox.register("attr_minute", random.randint, 0, 59)
-toolbox.register("attr_second", random.randint, 0, 59)
-toolbox.register("attr_wildcard", random.randint, -1, 1)
 
-def portu(uniq_srcport):
-    return uniq_srcport[random.randint(0, len(uniq_srcport)-1)]
+#---randomizor
 
-#then this, so now we can use attr_port, ##try generalize this for all
-toolbox.register("attr_port", portu, uniq_srcport)
+#import bisect #moved to top
+
+weight = {-1:0.1,21:0.45,22:0.45}
+items = weight.keys()
+mysum = 0
+breakpoints = [] 
+for i in items:
+    mysum += weight[i]
+    breakpoints.append(mysum)
+
+def getitem(breakpoints,items):
+    score = random.random() * breakpoints[-1]
+    i = bisect.bisect(breakpoints, score)
+    return items[i]
+
+for i, j in enumerate(uniq_all):
+    weight = {-1:0.1}
+    for u in uniq_all[i]:
+        weight[u] = 0.9/len(uniq_all[i])
+
+    items = weight.keys()
+    mysum = 0
+    breakpoints = []
+    for i in items:
+        mysum += weight[i]
+        breakpoints.append(mysum)
+
+    print weight 
+    print getitem(breakpoints,items)
+
+#toolbox.register("attr_randomizor", )
+
 
 # Structure initializers
 

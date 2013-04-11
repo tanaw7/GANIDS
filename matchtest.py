@@ -1,9 +1,10 @@
 ### Purpose is to use a rule tester to test the audit data records
+### This part should be in the evaluator
 
 from idsproto import *
 
 #        [0, 0, 1, 'finger', 1050, 79, 192, 168, 1, 30, 192, 168, 0, 20, '-']
-tester = [0, 0, -1, -1, -1, 23, 192, -1, -1, -1, -1, -1, -1, -1, -1]
+tester = [-1, -1, -1, -1, -1, 21, -1, -1, -1, -1, -1, -1, -1, -1, -1]
 
 matched_lines = 0.0
 for line in auditData:

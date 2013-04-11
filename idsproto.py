@@ -14,7 +14,7 @@ n_inds = 20 # Number of genes in each chromosome
 n_pop  = 500 # Number of chromosomes in each genome
 #------------------------------------------------------
 
-#------Read DARPA audit files---*done*try put this in individuals--
+# I ------Read DARPA audit files---*done*try put this in individuals--
 auditData = []
 nosplit = []
 for line in fileinput.input(['bsm.list']):
@@ -55,15 +55,88 @@ for line in fileinput.input(['bsm.list']):
 
 
     auditData.append(line)
-#------------------------------------------------------
+#--------------------------------------------------------------
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
 
 # unique ports should be taken from the input auditData[] list
-port_uniques = [ 22, 1023, 44, 550, 8080, -1] # example (-1 is a wildcard)
-port_uniques[random.randint(0, len(port_uniques)-1)]
+uniq_srcporttest = [ 22, 1023, 44, 550, 8080, -1] # example (-1 is a wildcard)
+uniq_srcporttest[random.randint(0, len(uniq_srcporttest)-1)]
 ## the above would give these ports equal chance to be picked
+
+# II -------find unique values in each field from audit data----
+uniq_hour = set()
+uniq_minute = set()
+uniq_second = set()
+uniq_protocol = set()
+uniq_srcport = set()
+uniq_desport = set()
+
+uniq_srcip_1stoct = set()
+uniq_srcip_2ndoct = set()
+uniq_srcip_3rdoct = set()
+uniq_srcip_4thoct = set()
+
+uniq_desip_1stoct = set()
+uniq_desip_2ndoct = set()
+uniq_desip_3rdoct = set()
+uniq_desip_4thoct = set()
+
+uniq_attack = set()
+
+for i in auditData:
+    uniq_hour.add(i[0])
+    uniq_minute.add(i[1])
+    uniq_second.add(i[2])
+    uniq_protocol.add(i[3])
+    uniq_srcport.add(i[4])
+    uniq_desport.add(i[5])
+    uniq_srcip_1stoct.add(i[6])
+    uniq_srcip_2ndoct.add(i[7])
+    uniq_srcip_3rdoct.add(i[8])
+    uniq_srcip_4thoct.add(i[9])
+    uniq_desip_1stoct.add(i[10])
+    uniq_desip_2ndoct.add(i[11])
+    uniq_desip_3rdoct.add(i[12])
+    uniq_desip_4thoct.add(i[13])
+    uniq_attack.add(i[14])
+
+uniq_hour = list(uniq_hour)
+uniq_minute = list(uniq_minute)
+uniq_second = list(uniq_second)
+uniq_protocol = list(uniq_protocol)
+uniq_srcport = list(uniq_srcport)
+uniq_desport = list(uniq_desport)
+uniq_srcip_1stoct = list(uniq_srcip_1stoct)
+uniq_srcip_2ndoct = list(uniq_srcip_2ndoct)
+uniq_srcip_3rdoct = list(uniq_srcip_3rdoct)
+uniq_srcip_4thoct = list(uniq_srcip_4thoct)
+uniq_desip_1stoct = list(uniq_desip_1stoct)
+uniq_desip_2ndoct = list(uniq_desip_2ndoct)
+uniq_desip_3rdoct = list(uniq_desip_3rdoct)
+uniq_desip_4thoct = list(uniq_desip_4thoct)
+uniq_attack = list(uniq_attack)
+
+uniq_all = [] # List containing all uniqe_values in all fields
+
+uniq_all.append(uniq_hour)
+uniq_all.append(uniq_minute)
+uniq_all.append(uniq_second)
+uniq_all.append(uniq_protocol)
+uniq_all.append(uniq_srcport)
+uniq_all.append(uniq_desport)
+uniq_all.append(uniq_srcip_1stoct)
+uniq_all.append(uniq_srcip_2ndoct)
+uniq_all.append(uniq_srcip_3rdoct)
+uniq_all.append(uniq_srcip_4thoct)
+uniq_all.append(uniq_desip_1stoct)
+uniq_all.append(uniq_desip_2ndoct)
+uniq_all.append(uniq_desip_3rdoct)
+uniq_all.append(uniq_desip_4thoct)
+uniq_all.append(uniq_attack)
+
+#---------------------------------------------------------------
 
 toolbox = base.Toolbox()
 # Attribute generator
@@ -75,11 +148,11 @@ toolbox.register("attr_minute", random.randint, 0, 59)
 toolbox.register("attr_second", random.randint, 0, 59)
 toolbox.register("attr_wildcard", random.randint, -1, 1)
 
-def portu(port_uniques):
-    return port_uniques[random.randint(0, len(port_uniques)-1)]
+def portu(uniq_srcport):
+    return uniq_srcport[random.randint(0, len(uniq_srcport)-1)]
 
 #then this, so now we can use attr_port, ##try generalize this for all
-toolbox.register("attr_port", portu, port_uniques)
+toolbox.register("attr_port", portu, uniq_srcport)
 
 # Structure initializers
 

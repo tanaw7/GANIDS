@@ -58,11 +58,6 @@ for line in fileinput.input(['bsm.list']):
     auditData.append(line)
 #END I--------------------------------------------------------------
 
-# unique ports should be taken from the input auditData[] list
-uniq_srcporttest = [ 22, 1023, 44, 550, 8080, -1] # example (-1 is a wildcard)
-uniq_srcporttest[random.randint(0, len(uniq_srcporttest)-1)]
-## the above would give these ports equal chance to be picked
-
 # II -------find unique values in each field from audit data----
 uniq_hour = set()
 uniq_minute = set()
@@ -134,14 +129,10 @@ uniq_all.append(uniq_desip_3rdoct)
 uniq_all.append(uniq_desip_4thoct)
 uniq_all.append(uniq_attack)
 
-#for i in uniq_all: #--- decide if we should add -1 to the uniq(s)
-#    i.insert(0, -1)#--- or should we add it in the generator function
-
-
 #END II----------------------------------------------------------------
 
-#-III -----Generate population: Build randomizor for each field in a 
-#-chromosome--------------------------------------------------------
+#-III -----Generator, Generate population: Build randomizor  
+#-for each field in a chromosome---------------------------------------
 
 creator.create("FitnessMax", base.Fitness, weights=(2.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
@@ -193,7 +184,7 @@ toolbox.register("population", tools.initRepeat,
 # imported evalFuncs.py
 
 def evalSC(individual):
-    Nconnect = len(uniq_all)
+    Nconnect = len(auditData)
     matched_lines = 0.0
     A = 0.0
     AnB = 0.0
@@ -221,7 +212,7 @@ def evalSC(individual):
     else:
         confidence = 0.0
     fitness = w1 * support + w2 * confidence
-
+    print 'FITNESS:', fitness
     return fitness,
 
 
@@ -236,7 +227,7 @@ def evalSC(individual):
 toolbox.register("evaluate", evalSC) #needs to be changed to evalIDS
 toolbox.register("mate", tools.cxTwoPoints)
 toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
-toolbox.register("select", tools.selTournament, tournsize=3)
+toolbox.register("select", tools.selRandom)
 
 def main():
     #random.seed(64)
@@ -245,7 +236,7 @@ def main():
         print pop.index(i)+1, i
 
 
-    CXPB, MUTPB, NGEN = 0.5, 0.2, 10
+    CXPB, MUTPB, NGEN = 0.5, 0.2, 50
     
     print("Start of evolution")
     

@@ -25,9 +25,11 @@ def evalhalf01(individual):
     return score,
 
 def evaliIDS(individual):
-   score = 0.0
+  score = 0.0
+  if individual[len(individual)-1] == '-':
+    score += 1
 
-   return score,
+  return score,
 
 def evalIDS(individual):
   fitness = 0.5

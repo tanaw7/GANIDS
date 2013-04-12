@@ -12,7 +12,7 @@ start_time = time()
 
 #------Modifiable values (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop  = 10 # Number of individuals in the whole population
+n_pop  = 20 # Number of individuals in the whole population
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -143,7 +143,7 @@ uniq_all.append(uniq_attack)
 #-III -----Generate population: Build randomizor for each field in a 
 #-chromosome--------------------------------------------------------
 
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+creator.create("FitnessMax", base.Fitness, weights=(2.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
 #print creator.FitnessMax((1.0,))
 
@@ -161,9 +161,9 @@ def randomizor(breakpoints,items):
 def chromosomizor():
     an_individual = []
     for i, j in enumerate(uniq_all):
-        weight = {-1:0.1}
+        weight = {-1:0.5}
         for u in uniq_all[i]:
-            weight[u] = 0.9/len(uniq_all[i])
+            weight[u] = 0.5/len(uniq_all[i])
 
         items = weight.keys()
         mysum = 0
@@ -191,12 +191,51 @@ toolbox.register("population", tools.initRepeat,
 
 #-------Evaluation Functions---------------------------
 # imported evalFuncs.py
+
+def evalSC(individual):
+    Nconnect = len(uniq_all)
+    matched_lines = 0.0
+    A = 0.0
+    AnB = 0.0
+    w1 = 0.2
+    w2 = 0.8
+    for line in auditData:
+        matched_fields = 0.0
+
+        for index, field in enumerate(line, start=0):
+            if (individual[index] == field) or (individual[index] == -1):
+                matched_fields = matched_fields + 1.0
+        if matched_fields >= 14.0:
+            A += 1
+        if matched_fields == 15.0:
+            AnB += 1
+        #if matched_fields == 15.0:
+        #    matched_lines = matched_lines + 1.0
+        #    #print line
+
+    print 'A:', A
+    print 'AnB:', AnB
+    support = AnB / Nconnect
+    if A > 0:
+        confidence = AnB / A
+    else:
+        confidence = 0.0
+    fitness = w1 * support + w2 * confidence
+
+    return fitness,
+
+
+
+
+
+
+
 #-------------------------------------------------------   
 
 # Operator registering
-toolbox.register("evaluate", evalIDS) #needs to be changed to evalIDS
+toolbox.register("evaluate", evalSC) #needs to be changed to evalIDS
 toolbox.register("mate", tools.cxTwoPoints)
-toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
 toolbox.register("select", tools.selTournament, tournsize=3)
 
 def main():
@@ -206,7 +245,7 @@ def main():
         print pop.index(i)+1, i
 
 
-    CXPB, MUTPB, NGEN = 0.5, 0.2, 50
+    CXPB, MUTPB, NGEN = 0.5, 0.2, 10
     
     print("Start of evolution")
     
@@ -219,8 +258,11 @@ def main():
     print("  Evaluated %i individuals" % len(pop))
     
     # Begin the evolution
+    round_gen = 0
     for g in range(NGEN):
-#        print("-- Generation %i --" % g)
+        k = g+1
+        round_gen += 1
+#        print("-- Generation %i --" % k)
         
         # Select the next generation individuals
         offspring = toolbox.select(pop, len(pop))
@@ -234,10 +276,10 @@ def main():
                 del child1.fitness.values
                 del child2.fitness.values
 
-        for mutant in offspring:
-            if random.random() < MUTPB:
-                toolbox.mutate(mutant)
-                del mutant.fitness.values
+        #for mutant in offspring:
+        #    if random.random() < MUTPB:
+        #        toolbox.mutate(mutant)
+        #        del mutant.fitness.values
     
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -260,19 +302,23 @@ def main():
         mx = float(max(fits))
         mxp = (mx*100) / n_inds
 
-#        print("  genes %s" % n_inds)
-#        print("  chromosomes %s" % n_pop)
-#        print("  Min %s" % min(fits))
-#        print("  Max %s" % max(fits))
-#        print("  mxp %.3f %%" % mxp)
+        print("  genes %s" % n_inds)
+        print("  individuals %s" % n_pop)
+        print("  Min %s" % min(fits))
+        print("  Max %s" % max(fits))
+        print("  mxp %.3f %%" % mxp)
 #        print("  Avg %s" % mean)
 #        print("  Std %s" % std)
+        print fitnesses
 
-        if max(fits) == n_inds:
+#        for i in pop: #prints initial population
+#            print pop.index(i)+1, "fv=%s" % i.fitness.values, i 
+
+        if max(fits) >= 0.8063:
             break
     
 #    print("-- End of (as NGEN set) evolution --")
-    
+    print round_gen, "rounds"
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
 

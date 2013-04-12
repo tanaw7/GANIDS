@@ -9,8 +9,8 @@ from deap import tools
 start_time = time()
 
 #------Modifiable values (notable ones)----------------
-n_inds = 15 # Number of genes in each chromosome
-n_pop  = 5 # Number of chromosomes in each genome
+n_inds = 6 # Number of genes in each chromosome
+n_pop  = 8 # Number of chromosomes in each genome
 #------------------------------------------------------
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -59,7 +59,8 @@ def main():
     
     # Begin the evolution
     for g in range(NGEN):
-        print("-- Generation %i --" % g)
+        k = g+1
+        print("-- Generation %i --" % k)
         
         # Select the next generation individuals
         offspring = toolbox.select(pop, len(pop))
@@ -106,6 +107,9 @@ def main():
         print("  mxp %.3f %%" % mxp)
         print("  Avg %s" % mean)
         print("  Std %s" % std)
+
+        for i in pop:
+          print pop.index(i), i, i.fitness.values
 
         if max(fits) == n_inds:
             break

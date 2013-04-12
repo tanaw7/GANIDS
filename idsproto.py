@@ -11,8 +11,8 @@ from deap import tools
 start_time = time()
 
 #------Modifiable values (notable ones)----------------
-n_inds = 15 # Number of genes in each chromosome
-n_pop  = 10 # Number of chromosomes in each genome
+n_inds = 15 # Number of genes in each individual [shd not be modified]
+n_pop  = 10 # Number of individuals in the whole population
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -202,8 +202,8 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 def main():
     #random.seed(64)
     pop = toolbox.population(n=n_pop)
-    for i in pop:
-        print pop.index(i), i
+    for i in pop: #prints initial population
+        print pop.index(i)+1, i
 
 
     CXPB, MUTPB, NGEN = 0.5, 0.2, 50

@@ -12,7 +12,7 @@ start_time = time()
 
 #------Modifiable values (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop  = 20 # Number of individuals in the whole population
+n_pop  = 200 # Number of individuals in the whole population
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -152,9 +152,9 @@ def randomizor(breakpoints,items):
 def chromosomizor():
     an_individual = []
     for i, j in enumerate(uniq_all):
-        weight = {-1:0.5}
+        weight = {-1:0.1}
         for u in uniq_all[i]:
-            weight[u] = 0.5/len(uniq_all[i])
+            weight[u] = 0.9/len(uniq_all[i])
 
         items = weight.keys()
         mysum = 0
@@ -180,10 +180,10 @@ toolbox.register("population", tools.initRepeat,
 
 #END III -----------------------------------------------------------------
 
-#-------Evaluation Functions---------------------------
+#-IV ------Evaluation Functions---------------------------
 # imported evalFuncs.py
 
-def evalSC(individual):
+def evalSupCon(individual):
     Nconnect = len(auditData)
     matched_lines = 0.0
     A = 0.0
@@ -204,30 +204,75 @@ def evalSC(individual):
         #    matched_lines = matched_lines + 1.0
         #    #print line
 
-    print 'A:', A
-    print 'AnB:', AnB
+    #print 'A:', A
+    #print 'AnB:', AnB
     support = AnB / Nconnect
     if A > 0:
         confidence = AnB / A
     else:
         confidence = 0.0
     fitness = w1 * support + w2 * confidence
-    print 'FITNESS:', fitness
+    #print 'FITNESS:', fitness
     return fitness,
 
+#END IV -------------------------------------------------------   
+
+#-- V --- Selector -------------------------------------
+#Select 2 best individuals for each type of attack in generated old pop
+#(So it select elites)
+#len(uniq_attack) no. of attack types
+#def selTwoBestAttks(pop):
+
+    #for i, ind in enumerate(pop):
+#    elites = tools.selBest(pop, 2)
+
+#    return elites
 
 
 
-
-
-
-#-------------------------------------------------------   
+#--------------------------------------------------------------- 
 
 # Operator registering
-toolbox.register("evaluate", evalSC) #needs to be changed to evalIDS
+toolbox.register("evaluate", evalSupCon) #needs to be changed to evalIDS
 toolbox.register("mate", tools.cxTwoPoints)
 toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
-toolbox.register("select", tools.selRandom)
+toolbox.register("select", tools.selNSGA2)
+
+#del later
+popza = toolbox.population(n=200)
+#
+attkUniqs = uniq_attack
+attkUniqs.remove('-')
+
+def selTwoBestAttks(pop):
+    """
+        The basic idea of this selector is to:
+        1. Accept the generated individuals
+        2. Categorize individuals into different attack type lists
+        3. Evaluate individuals in each list and pick the best two
+           as elites of that attack types
+        4. Then append them back together to pass on as elites
+           for the next generation.
+    """
+    attkTypes = len(attkUniqs) # 4, Numbers of attacks in integer
+    attkPop = []
+    attkInd = []
+
+    for i in xrange(attkTypes): #create lists within the main list
+        attkPop.append([])      #equals to the number of attkTypes
+
+    for i in xrange(attkTypes):
+
+        for j, k in enumerate(pop):
+            if k[-1] == attkUniqs[i]: #if last field is the same attack
+                attkPop[i].append(k)  #type then add to the attkPop
+
+    #TODO!!!****            
+    #evaluate individuals in attkPop and choose the best two elites from each
+
+    #dont use this, just idea elites = tools.selBest(pop, 2)
+
+    return attkPop
 
 def main():
     #random.seed(64)
@@ -235,17 +280,31 @@ def main():
     for i in pop: #prints initial population
         print pop.index(i)+1, i
 
+    #---del later, this was simulated to gain understanding
+    #   more of map(), zip()
+    #ass = selTwoBestAttks(pop)
+    #fitneys = list(map(toolbox.evaluate, ass))
+    #for k, j in zip(ass, fitneys):
+    #    k.fitness.values = j
 
-    CXPB, MUTPB, NGEN = 0.5, 0.2, 50
+
+    #for i in ass:
+    #    print i.fitness.values
+
+    CXPB, MUTPB, NGEN = 0.5, 0.2, 1
     
     print("Start of evolution")
     
     # Evaluate the entire population
-    fitnesses = list(map(toolbox.evaluate, pop))
-    print fitnesses
+    fitnesses = list(map(toolbox.evaluate, pop)) #THIS LINE MUST BE UNDERSTOOD
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
-    
+        #print ind.fitness.values,
+    #print fitnesses
+    for i in pop:
+        print i.fitness.values,
+
+    print " "
     print("  Evaluated %i individuals" % len(pop))
     
     # Begin the evolution
@@ -278,7 +337,7 @@ def main():
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
         
-#        print("  Evaluated %i individuals" % len(invalid_ind))
+        print("  Evaluated %i individuals" % len(invalid_ind))
         
         # The population is entirely replaced by the offspring
         pop[:] = offspring
@@ -300,7 +359,7 @@ def main():
         print("  mxp %.3f %%" % mxp)
 #        print("  Avg %s" % mean)
 #        print("  Std %s" % std)
-        print fitnesses
+        #print fitnesses
 
 #        for i in pop: #prints initial population
 #            print pop.index(i)+1, "fv=%s" % i.fitness.values, i 

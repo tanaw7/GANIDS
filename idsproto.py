@@ -134,7 +134,7 @@ uniq_all.append(uniq_attack)
 #-III -----Generator, Generate population: Build randomizor  
 #-for each field in a chromosome---------------------------------------
 
-creator.create("FitnessMax", base.Fitness, weights=(2.0,))
+creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
 #print creator.FitnessMax((1.0,))
 
@@ -240,6 +240,18 @@ toolbox.register("select", tools.selNSGA2)
 
 #del later
 popza = toolbox.population(n=200)
+
+#---del later, this was simulated to gain understanding
+#   more of map(), zip()
+#ass = selTwoBestAttks(popza)
+fitneys = list(map(toolbox.evaluate, popza))
+for k, j in zip(popza, fitneys):
+    k.fitness.values = j
+
+
+#for i in ass:
+#    print i.fitness.values
+
 #
 attkUniqs = uniq_attack
 attkUniqs.remove('-')
@@ -256,23 +268,32 @@ def selTwoBestAttks(pop):
     """
     attkTypes = len(attkUniqs) # 4, Numbers of attacks in integer
     attkPop = []
-    attkInd = []
+    elitesSub = []
+    elitesAll = []
 
     for i in xrange(attkTypes): #create lists within the main list
         attkPop.append([])      #equals to the number of attkTypes
 
     for i in xrange(attkTypes):
-
         for j, k in enumerate(pop):
             if k[-1] == attkUniqs[i]: #if last field is the same attack
                 attkPop[i].append(k)  #type then add to the attkPop
+
+    for i in attkPop:
+        elitesSub.append(tools.selBest(i, 2))
+
+    for i in elitesSub:
+        for j in i:
+            elitesAll.append(j)
+
 
     #TODO!!!****            
     #evaluate individuals in attkPop and choose the best two elites from each
 
     #dont use this, just idea elites = tools.selBest(pop, 2)
 
-    return attkPop
+    #return elites #this will return elites instead
+    return elitesAll
 
 def main():
     #random.seed(64)

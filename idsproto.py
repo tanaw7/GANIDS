@@ -12,7 +12,7 @@ start_time = time()
 
 #------Modifiable values (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop  = 200 # Number of individuals in the whole population
+n_pop  = 2000 # Number of individuals in the whole population
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -136,7 +136,6 @@ uniq_all.append(uniq_attack)
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMax)
-#print creator.FitnessMax((1.0,))
 
 toolbox = base.Toolbox()
 # Attribute generator
@@ -149,12 +148,12 @@ def randomizor(breakpoints,items):
     i = bisect.bisect(breakpoints, score)
     return items[i]
 
-def chromosomizor():
-    an_individual = []
-    for i, j in enumerate(uniq_all):
-        weight = {-1:0.1}
+def chromosomizor():   #A function for building a chromosome.
+    an_individual = [] 
+    for i, j in enumerate(uniq_all): # Using unique values from each field 
+        weight = {-1:0.5}
         for u in uniq_all[i]:
-            weight[u] = 0.9/len(uniq_all[i])
+            weight[u] = 0.5/len(uniq_all[i])
 
         items = weight.keys()
         mysum = 0
@@ -167,8 +166,6 @@ def chromosomizor():
         an_individual.append(randomizor(breakpoints,items))
 
     return an_individual
-
-#print chromosomizor()
 
 # Structure initializers
 toolbox.register("attr_chromosomizor", chromosomizor)
@@ -223,40 +220,10 @@ def evalSupCon(individual):
 #len(uniq_attack) no. of attack types
 #def selTwoBestAttks(pop):
 
-    #for i, ind in enumerate(pop):
-#    elites = tools.selBest(pop, 2)
-
-#    return elites
-
-
-
-#--------------------------------------------------------------- 
-
-# Operator registering
-toolbox.register("evaluate", evalSupCon) #needs to be changed to evalIDS
-toolbox.register("mate", tools.cxTwoPoints)
-toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
-toolbox.register("select", tools.selNSGA2)
-
-#del later
-popza = toolbox.population(n=200)
-
-#---del later, this was simulated to gain understanding
-#   more of map(), zip()
-#ass = selTwoBestAttks(popza)
-fitneys = list(map(toolbox.evaluate, popza))
-for k, j in zip(popza, fitneys):
-    k.fitness.values = j
-
-
-#for i in ass:
-#    print i.fitness.values
-
-#
 attkUniqs = uniq_attack
 attkUniqs.remove('-')
 
-def selTwoBestAttks(pop):
+def selTwoBestAttks(pop): #Selector function
     """
         The basic idea of this selector is to:
         1. Accept the generated individuals
@@ -271,7 +238,7 @@ def selTwoBestAttks(pop):
     elitesSub = []
     elitesAll = []
 
-    for i in xrange(attkTypes): #create lists within the main list
+    for i in xrange(attkTypes): #create lists within the attkPop list
         attkPop.append([])      #equals to the number of attkTypes
 
     for i in xrange(attkTypes):
@@ -282,22 +249,32 @@ def selTwoBestAttks(pop):
     for i in attkPop:
         elitesSub.append(tools.selBest(i, 2))
 
-    for i in elitesSub:
+    for i in elitesSub:  #appending all elites to elitesAll list
         for j in i:
             elitesAll.append(j)
 
+    return elitesAll #This will be returned to create part of new
+                     #population
+#--------------------------------------------------------------- 
 
-    #TODO!!!****            
-    #evaluate individuals in attkPop and choose the best two elites from each
+# Operator registering
+toolbox.register("evaluate", evalSupCon) #Support-Confidence
+toolbox.register("mate", tools.cxTwoPoints)
+toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
+toolbox.register("select", selTwoBestAttks)
+#del later
+popza = toolbox.population(n=20)
 
-    #dont use this, just idea elites = tools.selBest(pop, 2)
-
-    #return elites #this will return elites instead
-    return elitesAll
+#---del later, this was simulated to gain understanding
+#   more of map(), zip()
+#ass = selTwoBestAttks(popza)
+fitneys = list(map(toolbox.evaluate, popza))
+for k, j in zip(popza, fitneys):
+    k.fitness.values = j
 
 def main():
     #random.seed(64)
-    pop = toolbox.population(n=n_pop)
+    pop = toolbox.population(n=n_pop)   #CREATE POPULATION
     for i in pop: #prints initial population
         print pop.index(i)+1, i
 
@@ -307,7 +284,6 @@ def main():
     #fitneys = list(map(toolbox.evaluate, ass))
     #for k, j in zip(ass, fitneys):
     #    k.fitness.values = j
-
 
     #for i in ass:
     #    print i.fitness.values
@@ -320,8 +296,7 @@ def main():
     fitnesses = list(map(toolbox.evaluate, pop)) #THIS LINE MUST BE UNDERSTOOD
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
-        #print ind.fitness.values,
-    #print fitnesses
+
     for i in pop:
         print i.fitness.values,
 
@@ -331,14 +306,41 @@ def main():
     # Begin the evolution
     round_gen = 0
     for g in range(NGEN):
+        """
+        I now roughly understand the evolution process.
+        -first initialize, the output of the loop, the destination pop
+        (meaning create an empty list)
+        -then copy the elites over to the destination pop
+        -then begin the loop
+        *question is, wouldn't the elites become useless
+        *and unrealistic?
+        *since it doesn't really represent the likely evolutionary process
+        *it's like just copy the ones(likely with fitness of 0.0) to
+        *the final destination.
+
+
+        Check page 18, and pseudo code on page 27 again
+        and its description on page 28-29 as well before
+        begin to code. for now good night!
+
+
+        """
+
+
         k = g+1
         round_gen += 1
 #        print("-- Generation %i --" % k)
         
         # Select the next generation individuals
-        offspring = toolbox.select(pop, len(pop))
+        offspring = toolbox.select(pop)#  SELECT ELITES
+                                       #, len(pop)) amount select not used
         # Clone the selected individuals
+        for i in offspring:
+            print i, i.fitness.values
         offspring = list(map(toolbox.clone, offspring))
+        print "\n"
+        for i in offspring:
+            print i, i.fitness.values
     
         # Apply crossover and mutation on the offspring
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
@@ -378,7 +380,7 @@ def main():
         print("  Min %s" % min(fits))
         print("  Max %s" % max(fits))
         print("  mxp %.3f %%" % mxp)
-#        print("  Avg %s" % mean)
+        print("  Avg %s" % mean)
 #        print("  Std %s" % std)
         #print fitnesses
 

@@ -12,7 +12,7 @@ start_time = time()
 
 #------Modifiable values (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop  = 500 # Number of individuals in the whole population
+n_pop  = 400 # Number of individuals in the whole population
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -151,7 +151,7 @@ def randomizor(breakpoints,items):
 def chromosomizor():   #A function for building a chromosome.
     an_individual = [] 
     for i, j in enumerate(uniq_all): # Using unique values from each field 
-        wildcardWeight = 0.3  #chance that a gene generated is a wildcard
+        wildcardWeight = 0.1  #chance that a gene generated is a wildcard
         weight = {-1:wildcardWeight}
         for u in uniq_all[i]:
             weight[u] = (1 - wildcardWeight)/len(uniq_all[i])
@@ -257,9 +257,9 @@ def selElites(pop): #Selector function
     return elitesAll #This will be returned to create part of new
                      #population
 
-def selRandiBestj(pop, random_ind, fittest_ind):
+#def selRandiBestj(pop, random_ind, fittest_ind):
 
-    return 0
+#    return 0
 
 #--------------------------------------------------------------- 
 
@@ -283,13 +283,27 @@ fitneys = list(map(toolbox.evaluate, popza))
 for k, j in zip(popza, fitneys):
     k.fitness.values = j
 
+
+def selRandiBestj(pop, x, y):
+    """
+        Select randomly x individuals,
+        choose y best individuals from them.
+        (x must be greater than y)
+    """
+
+    remPop = tools.selBest(selRandom(pop, x), y)
+
+    return remPop
+
+
+
 def main():
     #random.seed(64)
     pop = toolbox.population(n=n_pop)   #CREATE POPULATION
-    for i in pop: #prints initial population
-        print pop.index(i)+1, i
+    #for i in pop: #prints initial population
+    #    print pop.index(i)+1, i
 
-    CXPB, MUTPB, NGEN = 0.5, 0.2, 50
+    CXPB, MUTPB, NGEN = 0.5, 0.2, 400 #CXPB to be 1.0 if eval all
     
     print("Start of evolution")
     
@@ -310,14 +324,23 @@ def main():
 
         k = g+1
         round_gen += 1
-#        print("-- Generation %i --" % k)
+        print("-- Generation %i --" % k)
+
+        # Initialize new population
+        offspring = []
         
         # Select the next generation individuals
-        offspring = toolbox.select(pop, len(pop))#  SELECT ELITES
+        elites = toolbox.selectE(pop) # select elites for next gen
+
+        for i in elites:       
+            offspring.append(i) #add elites to the next gen
+            pop.remove(i)       #remove elites from current gen
+
+        offspring = toolbox.select(pop, len(pop))
                                        #, len(pop)) amount select not used
         # Clone the selected individuals
-        for i in offspring:
-            print i.fitness.values, # i,
+        #for i in offspring:
+        #    print i.fitness.values, # i,
         offspring = list(map(toolbox.clone, offspring))
         print "\n"
         #for i in offspring:
@@ -330,6 +353,12 @@ def main():
                 toolbox.mate(child1, child2)
                 del child1.fitness.values
                 del child2.fitness.values
+
+        print "###", len(offspring)
+        for i in elites:
+            offspring.append(i)
+        print "###", len(offspring)
+
 
         #for mutant in offspring:
         #    if random.random() < MUTPB:
@@ -376,7 +405,7 @@ def main():
     print round_gen, "rounds"
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
-    best30 = tools.selBest(pop, 20)
+    best30 = tools.selBest(pop, 10)
     for i in best30:
         print i, i.fitness.values
 

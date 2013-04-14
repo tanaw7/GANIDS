@@ -93,7 +93,8 @@ for i in auditData:
     uniq_desip_2ndoct.add(i[11])
     uniq_desip_3rdoct.add(i[12])
     uniq_desip_4thoct.add(i[13])
-    uniq_attack.add(i[14])
+    if i[14] != '-':
+        uniq_attack.add(i[14])
 
 uniq_hour = list(uniq_hour)
 uniq_minute = list(uniq_minute)
@@ -110,7 +111,7 @@ uniq_desip_2ndoct = list(uniq_desip_2ndoct)
 uniq_desip_3rdoct = list(uniq_desip_3rdoct)
 uniq_desip_4thoct = list(uniq_desip_4thoct)
 uniq_attack = list(uniq_attack)
-uniq_attack.remove('-')
+#uniq_attack.remove('-')
 
 uniq_all = [] # List containing all uniqe_values in all fields
 
@@ -186,6 +187,7 @@ toolbox.register("population", tools.initRepeat,
 def evalSupCon(individual):
     Nconnect = len(auditData)
     matched_lines = 0.0
+    wildcard = 0
     A = 0.0
     AnB = 0.0
     w1 = 0.2
@@ -196,6 +198,8 @@ def evalSupCon(individual):
         for index, field in enumerate(line, start=0):
             if (individual[index] == field) or (individual[index] == -1):
                 matched_fields = matched_fields + 1.0
+            if (individual[index] == -1):
+                wildcard += 1
         if matched_fields >= 14.0:
             A += 1
         if matched_fields == 15.0:
@@ -211,7 +215,10 @@ def evalSupCon(individual):
         confidence = AnB / A
     else:
         confidence = 0.0
+    wildcard_deduct = wildcard * 0.001
     fitness = w1 * support + w2 * confidence
+    if fitness > 0:
+        fitness = fitness - wildcard_deduct
     #print 'FITNESS:', fitness
     return fitness,
 

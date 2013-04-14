@@ -1,6 +1,10 @@
 Project Title: Using Genetic Algorithms to derive Network Intrusion Detection System
 signature-based rules (GA-NIDS)
 
+To run this program, you need to install deap (it's a python library).
+optional: install pypy, it's a flavor of python intepreter (Much faster and better performance).
+
+
 I.	Motivation
 
 Network Security and Artificial intelligence are the two sub-fields in Computer Science

@@ -12,7 +12,7 @@ start_time = time()
 
 #------Modifiable values (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop  = 2000 # Number of individuals in the whole population
+n_pop  = 500 # Number of individuals in the whole population
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -151,9 +151,10 @@ def randomizor(breakpoints,items):
 def chromosomizor():   #A function for building a chromosome.
     an_individual = [] 
     for i, j in enumerate(uniq_all): # Using unique values from each field 
-        weight = {-1:0.5}
+        wildcardWeight = 0.3  #chance that a gene generated is a wildcard
+        weight = {-1:wildcardWeight}
         for u in uniq_all[i]:
-            weight[u] = 0.5/len(uniq_all[i])
+            weight[u] = (1 - wildcardWeight)/len(uniq_all[i])
 
         items = weight.keys()
         mysum = 0
@@ -218,13 +219,13 @@ def evalSupCon(individual):
 #Select 2 best individuals for each type of attack in generated old pop
 #(So it select elites)
 #len(uniq_attack) no. of attack types
-#def selTwoBestAttks(pop):
+#def selElites(pop):
 
 attkUniqs = uniq_attack
 attkUniqs.remove('-')
 
-def selTwoBestAttks(pop): #Selector function
-    """
+def selElites(pop): #Selector function
+    """ Needs **UPDATE**
         The basic idea of this selector is to:
         1. Accept the generated individuals
         2. Categorize individuals into different attack type lists
@@ -255,19 +256,29 @@ def selTwoBestAttks(pop): #Selector function
 
     return elitesAll #This will be returned to create part of new
                      #population
+
+def selRandiBestj(pop, random_ind, fittest_ind):
+
+    return 0
+
 #--------------------------------------------------------------- 
 
 # Operator registering
 toolbox.register("evaluate", evalSupCon) #Support-Confidence
-toolbox.register("mate", tools.cxTwoPoints)
+toolbox.register("mate", tools.cxTwoPoints) #cxTwoPoints should work
 toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
-toolbox.register("select", selTwoBestAttks)
+toolbox.register("selectE", selElites) #this is not main selection
+                                      #it is only elites selection
+
+#toolbox.register("select", SOMENAME) #main selector needed
+toolbox.register("select", tools.selRandom)
+
 #del later
-popza = toolbox.population(n=20)
+popza = toolbox.population(n=200)
 
 #---del later, this was simulated to gain understanding
 #   more of map(), zip()
-#ass = selTwoBestAttks(popza)
+#ass = selElites(popza)
 fitneys = list(map(toolbox.evaluate, popza))
 for k, j in zip(popza, fitneys):
     k.fitness.values = j
@@ -278,17 +289,7 @@ def main():
     for i in pop: #prints initial population
         print pop.index(i)+1, i
 
-    #---del later, this was simulated to gain understanding
-    #   more of map(), zip()
-    #ass = selTwoBestAttks(pop)
-    #fitneys = list(map(toolbox.evaluate, ass))
-    #for k, j in zip(ass, fitneys):
-    #    k.fitness.values = j
-
-    #for i in ass:
-    #    print i.fitness.values
-
-    CXPB, MUTPB, NGEN = 0.5, 0.2, 1
+    CXPB, MUTPB, NGEN = 0.5, 0.2, 50
     
     print("Start of evolution")
     
@@ -306,43 +307,24 @@ def main():
     # Begin the evolution
     round_gen = 0
     for g in range(NGEN):
-        """
-        I now roughly understand the evolution process.
-        -first initialize, the output of the loop, the destination pop
-        (meaning create an empty list)
-        -then copy the elites over to the destination pop
-        -then begin the loop
-        *question is, wouldn't the elites become useless
-        *and unrealistic?
-        *since it doesn't really represent the likely evolutionary process
-        *it's like just copy the ones(likely with fitness of 0.0) to
-        *the final destination.
-
-
-        Check page 18, and pseudo code on page 27 again
-        and its description on page 28-29 as well before
-        begin to code. for now good night!
-
-
-        """
-
 
         k = g+1
         round_gen += 1
 #        print("-- Generation %i --" % k)
         
         # Select the next generation individuals
-        offspring = toolbox.select(pop)#  SELECT ELITES
+        offspring = toolbox.select(pop, len(pop))#  SELECT ELITES
                                        #, len(pop)) amount select not used
         # Clone the selected individuals
         for i in offspring:
-            print i, i.fitness.values
+            print i.fitness.values, # i,
         offspring = list(map(toolbox.clone, offspring))
         print "\n"
-        for i in offspring:
-            print i, i.fitness.values
+        #for i in offspring:
+        #    print i, i.fitness.values
     
         # Apply crossover and mutation on the offspring
+        random.shuffle(offspring)
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
             if random.random() < CXPB:
                 toolbox.mate(child1, child2)
@@ -387,18 +369,54 @@ def main():
 #        for i in pop: #prints initial population
 #            print pop.index(i)+1, "fv=%s" % i.fitness.values, i 
 
-        if max(fits) >= 0.8063:
-            break
+        #if max(fits) >= 0.8063:
+        #    break
     
 #    print("-- End of (as NGEN set) evolution --")
     print round_gen, "rounds"
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
+    best30 = tools.selBest(pop, 20)
+    for i in best30:
+        print i, i.fitness.values
 
 if __name__ == "__main__":
     main()
 
-#print 'gog', an_individual
-#run line below in bash for now to view generated individuals
-#for i in {1..100}; do echo $i; python idsproto.py | grep gog ; done;
 print "Took: ", time()-start_time, " seconds"
+
+"""
+        I now roughly understand the evolution process.
+        -first initialize, the output of the loop, the destination pop
+        (meaning create an empty list)
+        -then copy the elites over to the destination pop
+        -then begin the loop
+        *question is, wouldn't the elites become useless
+        *and unrealistic?
+        *since it doesn't really represent the likely evolutionary process
+        *it's like just copy the ones(likely with fitness of 0.0) to
+        *the final destination.
+
+        **UPDATE**
+        I have found online that Elitism exists to prevent the chance
+        of losing high-fitness value individuals that have been found
+        So elites should be reserved[2ofHighestAttack] some slots in the
+        next generation. Elitism should be a loop process as well.
+
+
+        Check page 18, and pseudo code on page 27 again
+        and its description on page 28-29 as well before
+        begin to code. for now good night!
+
+
+"""
+
+    #---del later, this was simulated to gain understanding
+    #   more of map(), zip()
+    #ass = selElites(pop)
+    #fitneys = list(map(toolbox.evaluate, ass))
+    #for k, j in zip(ass, fitneys):
+    #    k.fitness.values = j
+
+    #for i in ass:
+    #    print i.fitness.values

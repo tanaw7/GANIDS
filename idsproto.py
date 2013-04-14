@@ -12,7 +12,8 @@ start_time = time()
 
 #------Modifiable values (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 1000 # Number of individuals in the whole population
+n_pop = 400 # Number of individuals in the whole population
+elitesNo = 2
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -215,7 +216,7 @@ def evalSupCon(individual):
         confidence = AnB / A
     else:
         confidence = 0.0
-    wildcard_deduct = wildcard * 0.001
+    wildcard_deduct = wildcard * 0.0001
     fitness = w1 * support + w2 * confidence
     #if fitness >= 0:
     #    fitness = fitness - wildcard_deduct
@@ -257,7 +258,7 @@ for the next generation.
                 attkPop[i].append(k) #type then add to the attkPop
 
     for i in attkPop:
-        elitesSub.append(tools.selBest(i, 2))
+        elitesSub.append(tools.selBest(i, elitesNo))
 
     for i in elitesSub: #appending all elites to elitesAll list
         for j in i:
@@ -341,7 +342,7 @@ def main():
         # Select the next generation individuals
         elites = toolbox.selectE(pop) # select elites for next gen
         for i in elites:
-            print i, i.fitness.values
+            print "fv: %.6f" % i.fitness.values, i
         for i in elites:
             offspring.append(i) #add elites to the next gen
             #pop.remove(i) #remove elites from current gen
@@ -381,7 +382,7 @@ def main():
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
         
-        weaklings = tools.selWorst(offspring, 10)
+        weaklings = tools.selWorst(offspring, len(uniq_attack)*elitesNo)
         for i in weaklings:
             offspring.remove(i)
 
@@ -417,11 +418,11 @@ def main():
     
 # print("-- End of (as NGEN set) evolution --")
     print round_gen, "rounds"
-    best_ind = tools.selBest(pop, 1)[0]
-    print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
-    best30 = tools.selBest(pop, 10)
+    #best_ind = tools.selBest(pop, 1)[0]
+    print "Best individual are: " #% (best_ind, best_ind.fitness.values))
+    best30 = tools.selBest(pop, 30)
     for i in best30:
-        print i, i.fitness.values
+        print "fv: %.6f" % i.fitness.values, i
 
 if __name__ == "__main__":
     main()

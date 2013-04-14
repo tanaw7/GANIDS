@@ -12,8 +12,9 @@ start_time = time()
 
 #------Modifiable values (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 400 # Number of individuals in the whole population
-elitesNo = 2
+n_pop = 1000 # Number of individuals in the whole population
+elitesNo = 2 # elites per attack type chosen for next gen
+CXPB, MUTPB, NGEN = 1.0, 0.2, 100 #CXPB to be 1.0 if eval all
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -218,7 +219,7 @@ def evalSupCon(individual):
         confidence = 0.0
     wildcard_deduct = wildcard * 0.0001
     fitness = w1 * support + w2 * confidence
-    #if fitness >= 0:
+    #if fitness > 0:
     #    fitness = fitness - wildcard_deduct
     
     return fitness,
@@ -312,8 +313,6 @@ def main():
     pop = toolbox.population(n=n_pop) #CREATE POPULATION
     #for i in pop: #prints initial population
     # print pop.index(i)+1, i
-
-    CXPB, MUTPB, NGEN = 1.0, 0.2, 100 #CXPB to be 1.0 if eval all
     
     print("Start of evolution")
     

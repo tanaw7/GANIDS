@@ -217,9 +217,9 @@ def evalSupCon(individual):
         confidence = 0.0
     wildcard_deduct = wildcard * 0.001
     fitness = w1 * support + w2 * confidence
-    if fitness > 0:
-        fitness = fitness - wildcard_deduct
-    #print 'FITNESS:', fitness
+    #if fitness >= 0:
+    #    fitness = fitness - wildcard_deduct
+    
     return fitness,
 
 #END IV -------------------------------------------------------
@@ -312,7 +312,7 @@ def main():
     #for i in pop: #prints initial population
     # print pop.index(i)+1, i
 
-    CXPB, MUTPB, NGEN = 1.0, 0.2, 400 #CXPB to be 1.0 if eval all
+    CXPB, MUTPB, NGEN = 1.0, 0.2, 100 #CXPB to be 1.0 if eval all
     
     print("Start of evolution")
     
@@ -344,7 +344,7 @@ def main():
             print i, i.fitness.values
         for i in elites:
             offspring.append(i) #add elites to the next gen
-            pop.remove(i) #remove elites from current gen
+            #pop.remove(i) #remove elites from current gen
 
         offspring = toolbox.select(pop, len(pop))
                                        #, len(pop)) amount select not used
@@ -381,6 +381,10 @@ def main():
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
         
+        weaklings = tools.selWorst(offspring, 10)
+        for i in weaklings:
+            offspring.remove(i)
+
         print(" Evaluated %i individuals" % len(invalid_ind))
         
         # The population is entirely replaced by the offspring

@@ -439,27 +439,17 @@ if __name__ == "__main__":
 print "Took: ", time()-start_time, " seconds"
 
 """
-I now roughly understand the evolution process.
--first initialize, the output of the loop, the destination pop
-(meaning create an empty list)
--then copy the elites over to the destination pop
--then begin the loop
-*question is, wouldn't the elites become useless
-*and unrealistic?
-*since it doesn't really represent the likely evolutionary process
-*it's like just copy the ones(likely with fitness of 0.0) to
-*the final destination.
-
 **UPDATE**
 I have found online that Elitism exists to prevent the chance
 of losing high-fitness value individuals that have been found
 So elites should be reserved[2ofHighestAttack] some slots in the
 next generation. Elitism should be a loop process as well.
 
-
-Check page 18, and pseudo code on page 27 again
-and its description on page 28-29 as well before
-begin to code. for now good night!
+##Mutation##
+We need mutation because crossover alone would not lead to new value
+of genes being produced. Average rate would come to a stand still.
+And if the zeroeth generation is generated lacking in variety, then
+it is difficult to get the individuals to evolve much farther.
 
 
 """

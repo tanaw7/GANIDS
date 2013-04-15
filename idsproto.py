@@ -17,7 +17,7 @@ start_time = time()
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 400 # Number of individuals in the whole population
 
-CXPB, MUTPB, NGEN = 1.0, 0.2, 100 #CrossoverRate,MutateRate,generations
+CXPB, MUTPB, NGEN = 1.0, 0.2, 400 #CrossoverRate,MutateRate,generations
 wildcardWeight = 0.1 #chance that a gene generated is a wildcard
 weightSupport, weightConfidence = 0.2, 0.8
 wildcardDeduction = False
@@ -30,6 +30,7 @@ else:
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
 auditData = []
+nosplit = []
 fileName = 'bsm.list'
 for line in fileinput.input([fileName]):
     line = line.rstrip('\r\n') # strip off the newline of each record

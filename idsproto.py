@@ -2,6 +2,7 @@ import random
 import fileinput
 import bisect
 import itertools #eliminate duplicate lists in a list
+import re        #for multiple delimiters in dataset files
 from time import time
 from evalFuncs import *
 
@@ -11,20 +12,30 @@ from deap import tools
 
 start_time = time()
 
-#------Modifiable values (notable ones)----------------
+#--CONTROL PANEL---------------------------------------
+#------Modifiable variables (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 400 # Number of individuals in the whole population
-elitesNo = 2 # elites per attack type chosen for next gen
-CXPB, MUTPB, NGEN = 1.0, 0.2, 400 #CrossoverRate,MutateRate,generations
+
+CXPB, MUTPB, NGEN = 1.0, 0.2, 100 #CrossoverRate,MutateRate,generations
+wildcardWeight = 0.1 #chance that a gene generated is a wildcard
+weightSupport, weightConfidence = 0.2, 0.8
+wildcardDeduction = False
+
+if n_pop > 1000:
+    elitesNo = 5
+else:
+    elitesNo = n_pop/200 # elites per attack type chosen for next gen
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
 auditData = []
-nosplit = []
-for line in fileinput.input(['bsm.list']):
+fileName = 'bsm.list'
+for line in fileinput.input([fileName]):
     line = line.rstrip('\r\n') # strip off the newline of each record
     nosplit.append(line)
     if len(line) > 0:
+        line = re.sub(' +', ' ', line)
         array = line.split(" ")
 # Now array looks like this
 #['1', '01/23/1998', '16:56:48', '00:01:26', 'telnet', '1754', '23',
@@ -39,7 +50,10 @@ for line in fileinput.input(['bsm.list']):
         #---Protocal
         line.append(array[4])
         #---Source Port
-        line.append(int(array[5]))
+        if array[5] != '-':
+            line.append(int(array[5]))
+        else:
+            line.append(0)
         #---Destination Port
         line.append(int(array[6]))
         #---Source IP
@@ -59,6 +73,9 @@ for line in fileinput.input(['bsm.list']):
 
 
     auditData.append(line)
+
+# return auditData #when put in a function
+
 #END I--------------------------------------------------------------
 
 # II -------find unique values in each field from audit data----
@@ -133,6 +150,8 @@ uniq_all.append(uniq_desip_3rdoct)
 uniq_all.append(uniq_desip_4thoct)
 uniq_all.append(uniq_attack)
 
+#return uniq_all #when put in a function
+
 
 #END II----------------------------------------------------------------
 
@@ -154,15 +173,15 @@ def randomizor(breakpoints,items):
     return items[i]
 
 def chromosomizor(): #A function for building a chromosome.
+    wcw = wildcardWeight
     an_individual = []
     for i, j in enumerate(uniq_all): # Using unique values from each field
         if i == (len(uniq_all)-1):
-            wildcardWeight = 0.0 #we don't generate wildcard at attack field
-        else:
-            wildcardWeight = 0.1 #chance that a gene generated is a wildcard
-        weight = {-1:wildcardWeight}
+            wcw = 0.0 #we don't generate wildcard at attack field
+        
+        weight = {-1:wcw}
         for u in uniq_all[i]:
-            weight[u] = (1 - wildcardWeight)/len(uniq_all[i])
+            weight[u] = (1 - wcw)/len(uniq_all[i])
 
         items = weight.keys()
         mysum = 0
@@ -195,8 +214,8 @@ def evalSupCon(individual):
     wildcard = 0
     A = 0.0
     AnB = 0.0
-    w1 = 0.2
-    w2 = 0.8
+    w1 = weightSupport
+    w2 = weightConfidence
     for line in auditData:
         matched_fields = 0.0
 
@@ -219,8 +238,10 @@ def evalSupCon(individual):
         confidence = 0.0
     wildcard_deduct = wildcard * 0.0001
     fitness = w1 * support + w2 * confidence
-    #if fitness > 0:
-    #    fitness = fitness - wildcard_deduct
+
+    if wildcardDeduction == True:
+        if fitness > 0:
+            fitness = fitness - wildcard_deduct
     
     return fitness,
 

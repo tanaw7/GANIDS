@@ -1,6 +1,7 @@
 import random
 import fileinput
 import bisect
+import itertools #eliminate duplicate lists in a list
 from time import time
 from evalFuncs import *
 
@@ -12,9 +13,9 @@ start_time = time()
 
 #------Modifiable values (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 1000 # Number of individuals in the whole population
+n_pop = 400 # Number of individuals in the whole population
 elitesNo = 2 # elites per attack type chosen for next gen
-CXPB, MUTPB, NGEN = 1.0, 0.2, 100 #CXPB to be 1.0 if eval all
+CXPB, MUTPB, NGEN = 1.0, 0.2, 400 #CrossoverRate,MutateRate,generations
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -113,7 +114,6 @@ uniq_desip_2ndoct = list(uniq_desip_2ndoct)
 uniq_desip_3rdoct = list(uniq_desip_3rdoct)
 uniq_desip_4thoct = list(uniq_desip_4thoct)
 uniq_attack = list(uniq_attack)
-#uniq_attack.remove('-')
 
 uniq_all = [] # List containing all uniqe_values in all fields
 
@@ -156,7 +156,10 @@ def randomizor(breakpoints,items):
 def chromosomizor(): #A function for building a chromosome.
     an_individual = []
     for i, j in enumerate(uniq_all): # Using unique values from each field
-        wildcardWeight = 0.1 #chance that a gene generated is a wildcard
+        if i == (len(uniq_all)-1):
+            wildcardWeight = 0.0 #we don't generate wildcard at attack field
+        else:
+            wildcardWeight = 0.1 #chance that a gene generated is a wildcard
         weight = {-1:wildcardWeight}
         for u in uniq_all[i]:
             weight[u] = (1 - wildcardWeight)/len(uniq_all[i])
@@ -206,11 +209,8 @@ def evalSupCon(individual):
             A += 1
         if matched_fields == 15.0:
             AnB += 1
-        #if matched_fields == 15.0:
-        # matched_lines = matched_lines + 1.0
-        # #print line
 
-    #print 'A:', A
+    #print 'A:', A,
     #print 'AnB:', AnB
     support = AnB / Nconnect
     if A > 0:
@@ -309,7 +309,7 @@ choose y best individuals from them.
 
 
 def main():
-    #random.seed(64)
+    #random.seed(24) #uncommet this for testing
     pop = toolbox.population(n=n_pop) #CREATE POPULATION
     #for i in pop: #prints initial population
     # print pop.index(i)+1, i
@@ -419,9 +419,19 @@ def main():
     print round_gen, "rounds"
     #best_ind = tools.selBest(pop, 1)[0]
     print "Best individual are: " #% (best_ind, best_ind.fitness.values))
-    best30 = tools.selBest(pop, 30)
-    for i in best30:
-        print "fv: %.6f" % i.fitness.values, i
+    bestInds = tools.selBest(pop, 50)
+
+    for i, j in enumerate(bestInds):
+        print i, "fv: %.6f" % j.fitness.values, j
+
+    print "\n\n"
+    #Remove duplicate individuals from the results
+    bestInds.sort()
+    bestInds = tools.selBest(bestInds, len(bestInds))
+    bestInds = list(bestInds for bestInds,_ in itertools.groupby(bestInds))
+
+    for i, j in enumerate(bestInds):
+        print i, "fv: %.6f" % j.fitness.values, j
 
 if __name__ == "__main__":
     main()

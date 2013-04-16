@@ -14,24 +14,34 @@ start_time = time()
 
 #--CONTROL PANEL---------------------------------------
 #------Modifiable variables (notable ones)----------------
+fileName = 'w1_fri.list' # Training datasets file
+#fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 400 # Number of individuals in the whole population
-
-CXPB, MUTPB, NGEN = 1.0, 0.2, 100 #CrossoverRate,MutateRate,generations
-wildcardWeight = 0.1 #chance that a gene generated is a wildcard
-weightSupport, weightConfidence = 0.2, 0.8
-wildcardDeduction = False
+n_pop = 800 # Number of individuals in the whole population
 
 if n_pop > 1000:
-    elitesNo = 5
+    elitesNo = 10
 else:
-    elitesNo = n_pop/200 # elites per attack type chosen for next gen
+    elitesNo = n_pop/100 # elites per attack type chosen for next gen
+
+#CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.03, 2
+
+wildcardWeight = 0.6#0.1 #chance that a gene initialized is a wildcard
+weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
+
+wildcardPenalty = True #note: maybe deduction should be at result, not in loop
+wildcardPenaltyWeight = 0.000001
+wildcard_allowance = 2 # 1 to 15
+
+Result_numbers = 30
+show_elites = True
+
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
 auditData = []
 nosplit = []
-fileName = 'bsm.list'
 for line in fileinput.input([fileName]):
     line = line.rstrip('\r\n') # strip off the newline of each record
     nosplit.append(line)
@@ -180,10 +190,16 @@ def chromosomizor(): #A function for building a chromosome.
         if i == (len(uniq_all)-1):
             wcw = 0.0 #we don't generate wildcard at attack field
         
-        weight = {-1:wcw}
+        weight = {-1:wcw} #wcw
         for u in uniq_all[i]:
-            weight[u] = (1 - wcw)/len(uniq_all[i])
-
+            #print len(uniq_all[i])
+            # len()-1 because we don't need to count '-1' member
+            if i == 14:
+                weight[u] = (1 - wcw)/(len(uniq_all[i]))
+            else:    
+                weight[u] = (1 - wcw)/(len(uniq_all[i]) - 1)
+        weight[-1] = wcw
+        
         items = weight.keys()
         mysum = 0
         breakpoints = []
@@ -196,10 +212,17 @@ def chromosomizor(): #A function for building a chromosome.
 
     return an_individual
 
+def empty_chromosome():
+    an_individual = []
+    return an_individual
+
 # Structure initializers
 toolbox.register("attr_chromosomizor", chromosomizor)
+toolbox.register("attr_empty_chromosome", empty_chromosome)
 toolbox.register("individual", tools.initIterate,
                 creator.Individual, toolbox.attr_chromosomizor)
+toolbox.register("empty_individual", tools.initIterate,
+                creator.Individual, toolbox.attr_empty_chromosome)
 
 toolbox.register("population", tools.initRepeat,
                     list, toolbox.individual)
@@ -237,10 +260,11 @@ def evalSupCon(individual):
         confidence = AnB / A
     else:
         confidence = 0.0
-    wildcard_deduct = wildcard * 0.0001
+    
+    wildcard_deduct = wildcard * wildcardPenaltyWeight
     fitness = w1 * support + w2 * confidence
 
-    if wildcardDeduction == True:
+    if (wildcardPenalty == True) and (wildcard >= wildcard_allowance):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
     
@@ -248,7 +272,7 @@ def evalSupCon(individual):
 
 #END IV -------------------------------------------------------
 
-#-- V --- Selector -------------------------------------
+#-- V --- Selector (for elites) -------------------------------------
 #Select 2 best individuals for each type of attack in generated old pop
 #(So it select elites)
 #len(uniq_attack) no. of attack types
@@ -283,23 +307,50 @@ for the next generation.
     for i in attkPop:
         elitesSub.append(tools.selBest(i, elitesNo))
 
+
     for i in elitesSub: #appending all elites to elitesAll list
+        i = list(i for i,_ in itertools.groupby(i))
         for j in i:
             elitesAll.append(j)
+
+    #for i in elitesAll:
+    #    i = list(i for i,_ in itertools.groupby(i))
 
     return elitesAll #This will be returned to create part of new
                      #population
 
-#def selRandiBestj(pop, random_ind, fittest_ind):
+###For main selector we uses deap default tools.selRandom
 
-# return 0
+#END V ---------------------------------------------------------
 
+#-- VI Crossover operator---------------------------------------
+# Uses deap default tools.cxTwoPoints
+#END VI---------------------------------------------------------
+
+#-- VII Mutation operator---------------------------------------
+unique_all_app = uniq_all
+for i, field in enumerate(unique_all_app):
+    if i != 14:
+        field.append(-1)
+
+def mutator(individaul):
+    mutant = toolbox.empty_individual()
+    for i, field in enumerate(individaul):
+        unique_types = unique_all_app
+        if random.random() < MUTPB:
+            #print field, unique_types[i], "\n",
+            #remove original value from pool
+            #unique_types[i].remove(field)  
+            field = random.choice(unique_types[i])
+            #print field, unique_types[i],
+        mutant.append(field)
+    return mutant
 #---------------------------------------------------------------
 
 # Operator registering
 toolbox.register("evaluate", evalSupCon) #Support-Confidence
 toolbox.register("mate", tools.cxTwoPoints) #cxTwoPoints should work
-toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
+toolbox.register("mutate", mutator)
 toolbox.register("selectE", selElites) #this is not main selection
                                       #it is only elites selection
 
@@ -308,6 +359,7 @@ toolbox.register("select", tools.selRandom)
 
 #del later
 popza = toolbox.population(n=200)
+indy = popza[0]
 
 #---del later, this was simulated to gain understanding
 # more of map(), zip()
@@ -315,20 +367,6 @@ popza = toolbox.population(n=200)
 fitneys = list(map(toolbox.evaluate, popza))
 for k, j in zip(popza, fitneys):
     k.fitness.values = j
-
-
-def selRandiBestj(pop, x, y):
-    """
-Select randomly x individuals,
-choose y best individuals from them.
-(x must be greater than y)
-"""
-
-    remPop = tools.selBest(selRandom(pop, x), y)
-
-    return remPop
-
-
 
 def main():
     #random.seed(12) #uncommet this for testing
@@ -362,11 +400,10 @@ def main():
         
         # Select the next generation individuals
         elites = toolbox.selectE(pop) # select elites for next gen
-        for i in elites:
-            print "fv: %.6f" % i.fitness.values, i
-        #for i in elites:
-        #    offspring.append(i) #add elites to the next gen
-            #pop.remove(i) #remove elites from current gen
+        if show_elites == True:
+            for idx, i in enumerate(elites):
+                print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
+        
 
         offspring = toolbox.select(pop, len(pop))
         # Clone the selected individuals
@@ -383,9 +420,19 @@ def main():
                 del child2.fitness.values
 
         # Apply mutation on the offsping individuals
-        #for i, j in enumerate(offspring):
-        #    if random.random() < MUTPB:
-        #        toobox.mutate(offspring[i])
+        for idx, individual in enumerate(offspring):
+            if random.random() < enterMutation: # no need bcuz MUTPB in def
+                mutor = toolbox.clone(individual)
+                #print dir(mutor)
+                #print "##IND##", individual
+                mutor = toolbox.mutate(individual)
+                #print "##MUT##", mutor
+                del mutor.fitness.values
+                offspring[idx] = mutor
+
+    #mutant = toolbox.clone(ind1)
+    #ind2, = tools.mutGaussian(mutant, mu=0.0, sigma=0.2, indpb=0.2)
+    #del mutant.fitness.values
 
 
 
@@ -399,21 +446,33 @@ def main():
         # if random.random() < MUTPB:
         # toolbox.mutate(mutant)
         # del mutant.fitness.values
-    
+
+        weaklings = tools.selWorst(offspring, len(elites))
+        for i in weaklings:
+            offspring.remove(i)
+
+        n_lost = n_pop - len(offspring) #No. of individuals lost due to 
+        for i in range(n_lost):         #duplication or weaklings weeded out
+            new_ind = toolbox.individual()
+            offspring.append(new_ind)   #we replace them
+
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitnesses = map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
-        
-        weaklings = tools.selWorst(offspring, len(uniq_attack)*elitesNo)
-        for i in weaklings:
-            offspring.remove(i)
+
 
         print(" Evaluated %i individuals" % len(invalid_ind))
         
+        #remove dulicates in offspring (not practical unless new indvs added)
+        #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
+
+
+
         # The population is entirely replaced by the offspring
         pop[:] = offspring
+        print "###POPPPPPPP####", len(pop)
         
         # Gather all the fitnesses in one list and print the stats
         fits = [ind.fitness.values[0] for ind in pop]
@@ -426,12 +485,12 @@ def main():
         mxp = (mx*100) / n_inds
 
         print(" genes %s" % n_inds)
-        print(" individuals %s" % n_pop)
+        print(" individuals %s" % len(pop))
         print(" Min %s" % min(fits))
         print(" Max %s" % max(fits))
         print(" mxp %.3f %%" % mxp)
         print(" Avg %s" % mean)
-# print(" Std %s" % std)
+        print(" Std %s" % std)
         #print fitnesses
 
 # for i in pop: #prints initial population
@@ -443,20 +502,25 @@ def main():
 # print("-- End of (as NGEN set) evolution --")
     print round_gen, "rounds"
     #best_ind = tools.selBest(pop, 1)[0]
-    print "Best individual are: " #% (best_ind, best_ind.fitness.values))
-    bestInds = tools.selBest(pop, 50)
+    print "Best individuals are: " #% (best_ind, best_ind.fitness.values))
+    bestInds = tools.selBest(pop, Result_numbers)
 
     for i, j in enumerate(bestInds):
-        print i, "fv: %.6f" % j.fitness.values, j
+        print "%3d" % i, "fv: %.6f" % j.fitness.values, j
 
     print "\n\n"
     #Remove duplicate individuals from the results
     bestInds.sort()
     bestInds = tools.selBest(bestInds, len(bestInds))
     bestInds = list(bestInds for bestInds,_ in itertools.groupby(bestInds))
-
+    print "Best individuals (duplications removed) are: "
     for i, j in enumerate(bestInds):
-        print i, "fv: %.6f" % j.fitness.values, j
+        print "%3d" % i, "fv: %.6f" % j.fitness.values, j
+
+    topknots = toolbox.selectE(bestInds)
+    print "Best individuals by attack types are: "
+    for i, j in enumerate(topknots):
+        print "%20s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
 
 if __name__ == "__main__":
     main()
@@ -465,6 +529,13 @@ print "Took: ", time()-start_time, " seconds"
 
 """
 **UPDATE**
+Tested against w1_fri.list
+The larger the input files, the more we might need to increase
+wildcardWeight at the start. And lower the GeneMutationRate.
+This will help the fitness values to start off faster, if not
+the only way.
+
+##PAST##
 I have found online that Elitism exists to prevent the chance
 of losing high-fitness value individuals that have been found
 So elites should be reserved[2ofHighestAttack] some slots in the

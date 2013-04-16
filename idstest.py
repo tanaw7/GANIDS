@@ -14,8 +14,8 @@ start_time = time()
 
 #--CONTROL PANEL---------------------------------------
 #------Modifiable variables (notable ones)----------------
-#fileName = 'w1_fri.list' # Training datasets file
-fileName = 'bsm.list'
+fileName = 'w1_fri.list' # Training datasets file
+#fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 800 # Number of individuals in the whole population
 
@@ -25,12 +25,12 @@ else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 0.0, 0.03, 800
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.03, 800
 
-wildcardWeight = 0.1#0.1 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.6#0.1 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
-wildcardPenalty = False #note: maybe deduction should be at result, not in loop
+wildcardPenalty = True #note: maybe deduction should be at result, not in loop
 wildcardPenaltyWeight = 0.000001
 wildcard_allowance = 2 # 1 to 15
 
@@ -199,7 +199,7 @@ def chromosomizor(): #A function for building a chromosome.
             else:    
                 weight[u] = (1 - wcw)/(len(uniq_all[i]) - 1)
         weight[-1] = wcw
-        #print weight
+        
         items = weight.keys()
         mysum = 0
         breakpoints = []
@@ -207,7 +207,7 @@ def chromosomizor(): #A function for building a chromosome.
             mysum += weight[i]
             breakpoints.append(mysum)
 
-        print weight
+        #print weight
         an_individual.append(randomizor(breakpoints,items))
 
     return an_individual
@@ -529,6 +529,13 @@ print "Took: ", time()-start_time, " seconds"
 
 """
 **UPDATE**
+Tested against w1_fri.list
+The larger the input files, the more we might need to increase
+wildcardWeight at the start. And lower the GeneMutationRate.
+This will help the fitness values to start off faster, if not
+the only way.
+
+##PAST##
 I have found online that Elitism exists to prevent the chance
 of losing high-fitness value individuals that have been found
 So elites should be reserved[2ofHighestAttack] some slots in the

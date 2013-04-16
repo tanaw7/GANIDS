@@ -17,7 +17,7 @@ start_time = time()
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 400 # Number of individuals in the whole population
 
-CXPB, MUTPB, NGEN = 1.0, 0.2, 400 #CrossoverRate,MutateRate,generations
+CXPB, MUTPB, NGEN = 1.0, 0.2, 100 #CrossoverRate,MutateRate,generations
 wildcardWeight = 0.1 #chance that a gene generated is a wildcard
 weightSupport, weightConfidence = 0.2, 0.8
 wildcardDeduction = False
@@ -331,7 +331,7 @@ choose y best individuals from them.
 
 
 def main():
-    #random.seed(24) #uncommet this for testing
+    #random.seed(12) #uncommet this for testing
     pop = toolbox.population(n=n_pop) #CREATE POPULATION
     #for i in pop: #prints initial population
     # print pop.index(i)+1, i
@@ -369,22 +369,25 @@ def main():
             #pop.remove(i) #remove elites from current gen
 
         offspring = toolbox.select(pop, len(pop))
-                                       #, len(pop)) amount select not used
         # Clone the selected individuals
-        #for i in offspring:
-        # print i.fitness.values, # i,
         offspring = list(map(toolbox.clone, offspring))
-        #print "\n"
-        #for i in offspring:
-        # print i, i.fitness.values
-    
-        # Apply crossover and mutation on the offspring
-        random.shuffle(offspring)
+
+        # Apply crossover on the offspring individuals
+        # first we shuffle list members positions.
+        # Then we mate every two members next to one another
+        random.shuffle(offspring) 
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
             if random.random() < CXPB:
                 toolbox.mate(child1, child2)
                 del child1.fitness.values
                 del child2.fitness.values
+
+        # Apply mutation on the offsping individuals
+        #for i, j in enumerate(offspring):
+        #    if random.random() < MUTPB:
+        #        toobox.mutate(offspring[i])
+
+
 
     #    print "###", len(offspring)
         for i in elites:

@@ -14,28 +14,34 @@ start_time = time()
 
 #--CONTROL PANEL---------------------------------------
 #------Modifiable variables (notable ones)----------------
+#fileName = 'w1_fri.list' # Training datasets file
+fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 800 # Number of individuals in the whole population
-
-CXPB, MUTPB, NGEN = 1.0, 0.2, 2000 #CrossoverRate,MutateRate,generations
-wildcardWeight = 0.1 #chance that a gene generated is a wildcard
-weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
-wildcardPenalty = True #note: maybe deduction should be at result, not in loop
-wildcard_allowance = 2 # 1 to 15
-Result_numbers = 30
-
-show_elites = True
 
 if n_pop > 1000:
     elitesNo = 10
 else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
+
+#CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 0.0, 0.03, 800
+
+wildcardWeight = 0.1#0.1 #chance that a gene initialized is a wildcard
+weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
+
+wildcardPenalty = False #note: maybe deduction should be at result, not in loop
+wildcardPenaltyWeight = 0.000001
+wildcard_allowance = 2 # 1 to 15
+
+Result_numbers = 30
+show_elites = True
+
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
 auditData = []
 nosplit = []
-fileName = 'bsm.list'
 for line in fileinput.input([fileName]):
     line = line.rstrip('\r\n') # strip off the newline of each record
     nosplit.append(line)
@@ -184,10 +190,16 @@ def chromosomizor(): #A function for building a chromosome.
         if i == (len(uniq_all)-1):
             wcw = 0.0 #we don't generate wildcard at attack field
         
-        weight = {-1:wcw}
+        weight = {-1:wcw} #wcw
         for u in uniq_all[i]:
-            weight[u] = (1 - wcw)/len(uniq_all[i])
-
+            #print len(uniq_all[i])
+            # len()-1 because we don't need to count '-1' member
+            if i == 14:
+                weight[u] = (1 - wcw)/(len(uniq_all[i]))
+            else:    
+                weight[u] = (1 - wcw)/(len(uniq_all[i]) - 1)
+        weight[-1] = wcw
+        #print weight
         items = weight.keys()
         mysum = 0
         breakpoints = []
@@ -195,7 +207,7 @@ def chromosomizor(): #A function for building a chromosome.
             mysum += weight[i]
             breakpoints.append(mysum)
 
-        #print weight
+        print weight
         an_individual.append(randomizor(breakpoints,items))
 
     return an_individual
@@ -249,7 +261,7 @@ def evalSupCon(individual):
     else:
         confidence = 0.0
     
-    wildcard_deduct = wildcard * 0.0001
+    wildcard_deduct = wildcard * wildcardPenaltyWeight
     fitness = w1 * support + w2 * confidence
 
     if (wildcardPenalty == True) and (wildcard >= wildcard_allowance):
@@ -325,7 +337,7 @@ def mutator(individaul):
     mutant = toolbox.empty_individual()
     for i, field in enumerate(individaul):
         unique_types = unique_all_app
-        if random.random() < 1.0:
+        if random.random() < MUTPB:
             #print field, unique_types[i], "\n",
             #remove original value from pool
             #unique_types[i].remove(field)  
@@ -390,7 +402,7 @@ def main():
         elites = toolbox.selectE(pop) # select elites for next gen
         if show_elites == True:
             for idx, i in enumerate(elites):
-                print idx, "fv: %.6f" % i.fitness.values, i
+                print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
         
 
         offspring = toolbox.select(pop, len(pop))
@@ -409,7 +421,7 @@ def main():
 
         # Apply mutation on the offsping individuals
         for idx, individual in enumerate(offspring):
-            if random.random() < 1.0: # no need bcuz MUTPB in def
+            if random.random() < enterMutation: # no need bcuz MUTPB in def
                 mutor = toolbox.clone(individual)
                 #print dir(mutor)
                 #print "##IND##", individual
@@ -494,7 +506,7 @@ def main():
     bestInds = tools.selBest(pop, Result_numbers)
 
     for i, j in enumerate(bestInds):
-        print i, "fv: %.6f" % j.fitness.values, j
+        print "%3d" % i, "fv: %.6f" % j.fitness.values, j
 
     print "\n\n"
     #Remove duplicate individuals from the results
@@ -503,12 +515,12 @@ def main():
     bestInds = list(bestInds for bestInds,_ in itertools.groupby(bestInds))
     print "Best individuals (duplications removed) are: "
     for i, j in enumerate(bestInds):
-        print i, "fv: %.6f" % j.fitness.values, j
+        print "%3d" % i, "fv: %.6f" % j.fitness.values, j
 
     topknots = toolbox.selectE(bestInds)
     print "Best individuals by attack types are: "
     for i, j in enumerate(topknots):
-        print j[14], i, "fv: %.6f" % j.fitness.values, j
+        print "%10s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
 
 if __name__ == "__main__":
     main()

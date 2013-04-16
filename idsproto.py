@@ -364,8 +364,8 @@ def main():
         elites = toolbox.selectE(pop) # select elites for next gen
         for i in elites:
             print "fv: %.6f" % i.fitness.values, i
-        for i in elites:
-            offspring.append(i) #add elites to the next gen
+        #for i in elites:
+        #    offspring.append(i) #add elites to the next gen
             #pop.remove(i) #remove elites from current gen
 
         offspring = toolbox.select(pop, len(pop))

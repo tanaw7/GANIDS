@@ -15,12 +15,12 @@ start_time = time()
 #--CONTROL PANEL---------------------------------------
 #------Modifiable variables (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 800 # Number of individuals in the whole population
+n_pop = 400 # Number of individuals in the whole population
 
 CXPB, MUTPB, NGEN = 1.0, 0.2, 400 #CrossoverRate,MutateRate,generations
 wildcardWeight = 0.1 #chance that a gene generated is a wildcard
-weightSupport, weightConfidence = 0.2, 0.8
-wildcardDeduction = True
+weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
+wildcardDeduction = False #note: maybe deduction should be at result, not in loop
 
 if n_pop > 1000:
     elitesNo = 5
@@ -281,14 +281,16 @@ for the next generation.
                 attkPop[i].append(k) #type then add to the attkPop
 
     for i in attkPop:
-        #i = list(i for i,_ in itertools.groupby(i))
         elitesSub.append(tools.selBest(i, elitesNo))
 
+
     for i in elitesSub: #appending all elites to elitesAll list
+        i = list(i for i,_ in itertools.groupby(i))
         for j in i:
             elitesAll.append(j)
 
-
+    #for i in elitesAll:
+    #    i = list(i for i,_ in itertools.groupby(i))
 
     return elitesAll #This will be returned to create part of new
                      #population
@@ -312,7 +314,7 @@ def mutator(individaul):
     del mutant[:]
     for i, field in enumerate(individaul):
         unique_types = unique_all_app
-        if random.random() < 0.03:
+        if random.random() < 0.30:
             #print field, unique_types[i], "\n",
             #remove original value from pool
             #unique_types[i].remove(field)  
@@ -375,10 +377,10 @@ def main():
         
         # Select the next generation individuals
         elites = toolbox.selectE(pop) # select elites for next gen
-        for i in elites:
-            print "fv: %.6f" % i.fitness.values, i
-        for i in elites:
-            offspring.append(i) #add elites to the next gen
+        for idx, i in enumerate(elites):
+            print idx, "fv: %.6f" % i.fitness.values, i
+        #for i in elites:
+        #    offspring.append(i) #add elites to the next gen
             #pop.remove(i) #remove elites from current gen
 
         offspring = toolbox.select(pop, len(pop))
@@ -396,14 +398,14 @@ def main():
                 del child2.fitness.values
 
         # Apply mutation on the offsping individuals
-        #for individual in offspring:
-        #    if random.random() < 1.0: # no need bcuz MUTPB in def
-        #        mutor = toolbox.clone(individual)
-        #        #print dir(mutor)
-        #        #print "##IND##", individual
-        #        mutor = toolbox.mutate(individual)
-        #        #print "##MUT##", mutor
-        #        del mutor.fitness.values
+        for individual in offspring:
+            if random.random() < 0.1: # no need bcuz MUTPB in def
+                mutor = toolbox.clone(individual)
+                #print dir(mutor)
+                #print "##IND##", individual
+                mutor = toolbox.mutate(individual)
+                #print "##MUT##", mutor
+                del mutor.fitness.values
 
     #mutant = toolbox.clone(ind1)
     #ind2, = tools.mutGaussian(mutant, mu=0.0, sigma=0.2, indpb=0.2)
@@ -421,19 +423,29 @@ def main():
         # if random.random() < MUTPB:
         # toolbox.mutate(mutant)
         # del mutant.fitness.values
-    
+
+        n_lost = n_pop - len(offspring)
+        for i in range(n_lost):
+            new_ind = toolbox.individual()
+            offspring.append(new_ind)
+
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitnesses = map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
-        
-        weaklings = tools.selWorst(offspring, len(uniq_attack)*elitesNo)
+
+        weaklings = tools.selWorst(offspring, len(uniq_attack)*len(elites))
         for i in weaklings:
             offspring.remove(i)
 
         print(" Evaluated %i individuals" % len(invalid_ind))
         
+        #remove dulicates in offspring (not practical unless new indvs added)
+        #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
+
+
+
         # The population is entirely replaced by the offspring
         pop[:] = offspring
         
@@ -447,13 +459,13 @@ def main():
         mx = float(max(fits))
         mxp = (mx*100) / n_inds
 
-    #    print(" genes %s" % n_inds)
-    #    print(" individuals %s" % n_pop)
-    #    print(" Min %s" % min(fits))
-    #    print(" Max %s" % max(fits))
-    #    print(" mxp %.3f %%" % mxp)
-    #    print(" Avg %s" % mean)
-# print(" Std %s" % std)
+        print(" genes %s" % n_inds)
+        print(" individuals %s" % n_pop)
+        print(" Min %s" % min(fits))
+        print(" Max %s" % max(fits))
+        print(" mxp %.3f %%" % mxp)
+        print(" Avg %s" % mean)
+        print(" Std %s" % std)
         #print fitnesses
 
 # for i in pop: #prints initial population

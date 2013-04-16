@@ -20,7 +20,8 @@ n_pop = 400 # Number of individuals in the whole population
 CXPB, MUTPB, NGEN = 1.0, 0.2, 400 #CrossoverRate,MutateRate,generations
 wildcardWeight = 0.1 #chance that a gene generated is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
-wildcardDeduction = False #note: maybe deduction should be at result, not in loop
+wildcardDeduction = True #note: maybe deduction should be at result, not in loop
+wildcard_allowance = 2 # 1 to 15
 
 if n_pop > 1000:
     elitesNo = 5
@@ -196,10 +197,17 @@ def chromosomizor(): #A function for building a chromosome.
 
     return an_individual
 
+def empty_chromosome():
+    an_individual = []
+    return an_individual
+
 # Structure initializers
 toolbox.register("attr_chromosomizor", chromosomizor)
+toolbox.register("attr_empty_chromosome", empty_chromosome)
 toolbox.register("individual", tools.initIterate,
                 creator.Individual, toolbox.attr_chromosomizor)
+toolbox.register("empty_individual", tools.initIterate,
+                creator.Individual, toolbox.attr_empty_chromosome)
 
 toolbox.register("population", tools.initRepeat,
                     list, toolbox.individual)
@@ -237,10 +245,11 @@ def evalSupCon(individual):
         confidence = AnB / A
     else:
         confidence = 0.0
+    
     wildcard_deduct = wildcard * 0.0001
     fitness = w1 * support + w2 * confidence
 
-    if wildcardDeduction == True:
+    if (wildcardDeduction == True) and (wildcard >= wildcard_allowance):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
     
@@ -310,8 +319,7 @@ for i, field in enumerate(unique_all_app):
         field.append(-1)
 
 def mutator(individaul):
-    mutant = toolbox.individual()
-    del mutant[:]
+    mutant = toolbox.empty_individual()
     for i, field in enumerate(individaul):
         unique_types = unique_all_app
         if random.random() < 0.30:
@@ -398,7 +406,7 @@ def main():
                 del child2.fitness.values
 
         # Apply mutation on the offsping individuals
-        for individual in offspring:
+        for idx, individual in enumerate(offspring):
             if random.random() < 0.1: # no need bcuz MUTPB in def
                 mutor = toolbox.clone(individual)
                 #print dir(mutor)
@@ -406,6 +414,7 @@ def main():
                 mutor = toolbox.mutate(individual)
                 #print "##MUT##", mutor
                 del mutor.fitness.values
+                offspring[idx] = mutor
 
     #mutant = toolbox.clone(ind1)
     #ind2, = tools.mutGaussian(mutant, mu=0.0, sigma=0.2, indpb=0.2)

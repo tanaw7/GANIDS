@@ -15,21 +15,21 @@ start_time = time()
 #--CONTROL PANEL---------------------------------------
 #------Modifiable variables (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 400 # Number of individuals in the whole population
+n_pop = 800 # Number of individuals in the whole population
 
 CXPB, MUTPB, NGEN = 1.0, 0.2, 2000 #CrossoverRate,MutateRate,generations
 wildcardWeight = 0.1 #chance that a gene generated is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 wildcardPenalty = True #note: maybe deduction should be at result, not in loop
 wildcard_allowance = 2 # 1 to 15
-Result_numbers = 500
+Result_numbers = 30
 
 show_elites = True
 
 if n_pop > 1000:
-    elitesNo = 5
+    elitesNo = 10
 else:
-    elitesNo = n_pop/200 # elites per attack type chosen for next gen
+    elitesNo = n_pop/100 # elites per attack type chosen for next gen
 #------------------------------------------------------
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
@@ -325,7 +325,7 @@ def mutator(individaul):
     mutant = toolbox.empty_individual()
     for i, field in enumerate(individaul):
         unique_types = unique_all_app
-        if random.random() < 0.30:
+        if random.random() < 1.0:
             #print field, unique_types[i], "\n",
             #remove original value from pool
             #unique_types[i].remove(field)  
@@ -409,7 +409,7 @@ def main():
 
         # Apply mutation on the offsping individuals
         for idx, individual in enumerate(offspring):
-            if random.random() < 0.1: # no need bcuz MUTPB in def
+            if random.random() < 1.0: # no need bcuz MUTPB in def
                 mutor = toolbox.clone(individual)
                 #print dir(mutor)
                 #print "##IND##", individual
@@ -501,9 +501,14 @@ def main():
     bestInds.sort()
     bestInds = tools.selBest(bestInds, len(bestInds))
     bestInds = list(bestInds for bestInds,_ in itertools.groupby(bestInds))
-
+    print "Best individuals (duplications removed) are: "
     for i, j in enumerate(bestInds):
         print i, "fv: %.6f" % j.fitness.values, j
+
+    topknots = toolbox.selectE(bestInds)
+    print "Best individuals by attack types are: "
+    for i, j in enumerate(topknots):
+        print j[14], i, "fv: %.6f" % j.fitness.values, j
 
 if __name__ == "__main__":
     main()

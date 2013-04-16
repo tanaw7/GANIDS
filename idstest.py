@@ -15,12 +15,12 @@ start_time = time()
 #--CONTROL PANEL---------------------------------------
 #------Modifiable variables (notable ones)----------------
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 400 # Number of individuals in the whole population
+n_pop = 800 # Number of individuals in the whole population
 
-CXPB, MUTPB, NGEN = 1.0, 0.2, 100 #CrossoverRate,MutateRate,generations
+CXPB, MUTPB, NGEN = 1.0, 0.2, 400 #CrossoverRate,MutateRate,generations
 wildcardWeight = 0.1 #chance that a gene generated is a wildcard
 weightSupport, weightConfidence = 0.2, 0.8
-wildcardDeduction = False
+wildcardDeduction = True
 
 if n_pop > 1000:
     elitesNo = 5
@@ -281,11 +281,14 @@ for the next generation.
                 attkPop[i].append(k) #type then add to the attkPop
 
     for i in attkPop:
+        #i = list(i for i,_ in itertools.groupby(i))
         elitesSub.append(tools.selBest(i, elitesNo))
 
     for i in elitesSub: #appending all elites to elitesAll list
         for j in i:
             elitesAll.append(j)
+
+
 
     return elitesAll #This will be returned to create part of new
                      #population
@@ -300,19 +303,21 @@ for the next generation.
 
 #-- VII Mutation operator---------------------------------------
 unique_all_app = uniq_all
-for i in unique_all_app:
-    i.append(-1)
+for i, field in enumerate(unique_all_app):
+    if i != 14:
+        field.append(-1)
 
 def mutator(individaul):
-    unique_types = unique_all_app
-    mutant = []
+    mutant = toolbox.individual()
+    del mutant[:]
     for i, field in enumerate(individaul):
-        if random.random() < 0.5:
-            print field, unique_types[i], "\n",
+        unique_types = unique_all_app
+        if random.random() < 0.03:
+            #print field, unique_types[i], "\n",
             #remove original value from pool
-            unique_types[i].remove(field)  
+            #unique_types[i].remove(field)  
             field = random.choice(unique_types[i])
-            print field, unique_types[i],
+            #print field, unique_types[i],
         mutant.append(field)
     return mutant
 #---------------------------------------------------------------
@@ -392,10 +397,17 @@ def main():
 
         # Apply mutation on the offsping individuals
         #for individual in offspring:
-        #    if random.random() < MUTPB:
-        #        toobox.mutate(individual)
-        #        del individual.fitness.values
+        #    if random.random() < 1.0: # no need bcuz MUTPB in def
+        #        mutor = toolbox.clone(individual)
+        #        #print dir(mutor)
+        #        #print "##IND##", individual
+        #        mutor = toolbox.mutate(individual)
+        #        #print "##MUT##", mutor
+        #        del mutor.fitness.values
 
+    #mutant = toolbox.clone(ind1)
+    #ind2, = tools.mutGaussian(mutant, mu=0.0, sigma=0.2, indpb=0.2)
+    #del mutant.fitness.values
 
 
 
@@ -435,12 +447,12 @@ def main():
         mx = float(max(fits))
         mxp = (mx*100) / n_inds
 
-        print(" genes %s" % n_inds)
-        print(" individuals %s" % n_pop)
-        print(" Min %s" % min(fits))
-        print(" Max %s" % max(fits))
-        print(" mxp %.3f %%" % mxp)
-        print(" Avg %s" % mean)
+    #    print(" genes %s" % n_inds)
+    #    print(" individuals %s" % n_pop)
+    #    print(" Min %s" % min(fits))
+    #    print(" Max %s" % max(fits))
+    #    print(" mxp %.3f %%" % mxp)
+    #    print(" Avg %s" % mean)
 # print(" Std %s" % std)
         #print fitnesses
 
@@ -454,7 +466,7 @@ def main():
     print round_gen, "rounds"
     #best_ind = tools.selBest(pop, 1)[0]
     print "Best individual are: " #% (best_ind, best_ind.fitness.values))
-    bestInds = tools.selBest(pop, 50)
+    bestInds = tools.selBest(pop, 400)
 
     for i, j in enumerate(bestInds):
         print i, "fv: %.6f" % j.fitness.values, j

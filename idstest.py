@@ -17,11 +17,14 @@ start_time = time()
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 400 # Number of individuals in the whole population
 
-CXPB, MUTPB, NGEN = 1.0, 0.2, 400 #CrossoverRate,MutateRate,generations
+CXPB, MUTPB, NGEN = 1.0, 0.2, 2000 #CrossoverRate,MutateRate,generations
 wildcardWeight = 0.1 #chance that a gene generated is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
-wildcardDeduction = True #note: maybe deduction should be at result, not in loop
+wildcardPenalty = True #note: maybe deduction should be at result, not in loop
 wildcard_allowance = 2 # 1 to 15
+Result_numbers = 500
+
+show_elites = True
 
 if n_pop > 1000:
     elitesNo = 5
@@ -249,7 +252,7 @@ def evalSupCon(individual):
     wildcard_deduct = wildcard * 0.0001
     fitness = w1 * support + w2 * confidence
 
-    if (wildcardDeduction == True) and (wildcard >= wildcard_allowance):
+    if (wildcardPenalty == True) and (wildcard >= wildcard_allowance):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
     
@@ -385,11 +388,10 @@ def main():
         
         # Select the next generation individuals
         elites = toolbox.selectE(pop) # select elites for next gen
-        for idx, i in enumerate(elites):
-            print idx, "fv: %.6f" % i.fitness.values, i
-        #for i in elites:
-        #    offspring.append(i) #add elites to the next gen
-            #pop.remove(i) #remove elites from current gen
+        if show_elites == True:
+            for idx, i in enumerate(elites):
+                print idx, "fv: %.6f" % i.fitness.values, i
+        
 
         offspring = toolbox.select(pop, len(pop))
         # Clone the selected individuals
@@ -433,10 +435,14 @@ def main():
         # toolbox.mutate(mutant)
         # del mutant.fitness.values
 
-        n_lost = n_pop - len(offspring)
-        for i in range(n_lost):
+        weaklings = tools.selWorst(offspring, len(elites))
+        for i in weaklings:
+            offspring.remove(i)
+
+        n_lost = n_pop - len(offspring) #No. of individuals lost due to 
+        for i in range(n_lost):         #duplication or weaklings weeded out
             new_ind = toolbox.individual()
-            offspring.append(new_ind)
+            offspring.append(new_ind)   #we replace them
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -444,9 +450,6 @@ def main():
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
 
-        weaklings = tools.selWorst(offspring, len(uniq_attack)*len(elites))
-        for i in weaklings:
-            offspring.remove(i)
 
         print(" Evaluated %i individuals" % len(invalid_ind))
         
@@ -457,6 +460,7 @@ def main():
 
         # The population is entirely replaced by the offspring
         pop[:] = offspring
+        print "###POPPPPPPP####", len(pop)
         
         # Gather all the fitnesses in one list and print the stats
         fits = [ind.fitness.values[0] for ind in pop]
@@ -469,7 +473,7 @@ def main():
         mxp = (mx*100) / n_inds
 
         print(" genes %s" % n_inds)
-        print(" individuals %s" % n_pop)
+        print(" individuals %s" % len(pop))
         print(" Min %s" % min(fits))
         print(" Max %s" % max(fits))
         print(" mxp %.3f %%" % mxp)
@@ -486,8 +490,8 @@ def main():
 # print("-- End of (as NGEN set) evolution --")
     print round_gen, "rounds"
     #best_ind = tools.selBest(pop, 1)[0]
-    print "Best individual are: " #% (best_ind, best_ind.fitness.values))
-    bestInds = tools.selBest(pop, 400)
+    print "Best individuals are: " #% (best_ind, best_ind.fitness.values))
+    bestInds = tools.selBest(pop, Result_numbers)
 
     for i, j in enumerate(bestInds):
         print i, "fv: %.6f" % j.fitness.values, j

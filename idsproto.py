@@ -14,22 +14,27 @@ start_time = time()
 
 #--CONTROL PANEL---------------------------------------
 #------Modifiable variables (notable ones)----------------
-fileName = 'w1_fri.list' # Training datasets file
+#fileName = 'w1_mon.list' # Training datasets file
+#fileName = 'w1_tue.list'
+#fileName = 'w1_wed.list'
+#fileName = 'w1_thu.list'
+fileName = 'w1_fri.list' 
 #fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 800 # Number of individuals in the whole population
 
-if n_pop > 1000:
+if n_pop > 800:
     elitesNo = 10
 else:
-    elitesNo = n_pop/100 # elites per attack type chosen for next gen
+    elitesNo = n_pop/50 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.03, 2
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.03, 400
 
-wildcardWeight = 0.6#0.1 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.9#0.1 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
+#------THIS wildCardPenalty looks slightly strange on the results, investigate!
 wildcardPenalty = True #note: maybe deduction should be at result, not in loop
 wildcardPenaltyWeight = 0.000001
 wildcard_allowance = 2 # 1 to 15
@@ -66,7 +71,10 @@ for line in fileinput.input([fileName]):
         else:
             line.append(0)
         #---Destination Port
-        line.append(int(array[6]))
+        if array[6] != '-':
+            line.append(int(array[6]))
+        else:
+            line.append(0)
         #---Source IP
         ip = array[7].split(".")
         line.append(int(ip[0])) #1st octet
@@ -264,7 +272,7 @@ def evalSupCon(individual):
     wildcard_deduct = wildcard * wildcardPenaltyWeight
     fitness = w1 * support + w2 * confidence
 
-    if (wildcardPenalty == True) and (wildcard >= wildcard_allowance):
+    if (wildcardPenalty == True):# and (wildcard >= wildcard_allowance):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
     

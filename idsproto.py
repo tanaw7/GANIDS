@@ -23,7 +23,7 @@ start_time = time()
 #fileName = 'mixed.list' 
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 600 # Number of individuals in the whole population
+n_pop = 800 # Number of individuals in the whole population
 
 if n_pop > 800:
     elitesNo = 10
@@ -42,6 +42,8 @@ wildcard_allowance = 2 # 1 to 15
 
 Result_numbers = 30
 show_elites = True
+
+mutateElitesWildcards = False
 
 #------------------------------------------------------
 
@@ -171,7 +173,6 @@ uniq_all.append(uniq_desip_4thoct)
 uniq_all.append(uniq_attack)
 
 #return uniq_all #when put in a function
-print "UNIQ ALLL", uniq_all
 
 #END II----------------------------------------------------------------
 
@@ -337,12 +338,10 @@ for the next generation.
 #END VI---------------------------------------------------------
 
 #-- VII Mutation operator---------------------------------------
-print "\n##UNIQ ALL BEfor mutators##", uniq_all
 unique_all_app = copy.deepcopy(uniq_all)
 for i, field in enumerate(unique_all_app):
     if i != 14:
         field.append(-1)
-print "\n##UNIQ ALL after mutators + <-1></-1>##", uniq_all
 
 def mutator(individaul):
     mutant = toolbox.empty_individual()
@@ -357,14 +356,15 @@ def mutator(individaul):
         mutant.append(field)
     return mutant
 
-def mutateWcardGene(individaul):
+def mutateWcardGene(individaul): #use to mutate wildcard genes of elites
     mutant = toolbox.clone(individaul)
     for i, field in enumerate(mutant):
         unique_types = uniq_all
         #print unique_types
-        if random.random() < 1.0: #0.2:
+        if random.random() < 0.01: #0.2:
             if field == -1:
                 mutant[i] = random.choice(unique_types[i])
+        del mutant.fitness.values
     return mutant
 #---------------------------------------------------------------
 
@@ -456,22 +456,24 @@ def main():
     #ind2, = tools.mutGaussian(mutant, mu=0.0, sigma=0.2, indpb=0.2)
     #del mutant.fitness.values
 
-
+#-- VIII -- Optimizers --------------------------------------------------------
 
     #    print "###", len(offspring)
         for i in elites:
             offspring.append(i)
+
+        weaklingMultiplier = 1
+
+        if mutateElitesWildcards == True:
+            weaklingMultiplier += 1
+            for i in elites:
+                offspring.append(mutateWcardGene(i))
     #    print "###", len(offspring)
 
-
-        #for mutant in offspring:
-        # if random.random() < MUTPB:
-        # toolbox.mutate(mutant)
-        # del mutant.fitness.values
-
-        weaklings = tools.selWorst(offspring, len(elites))
+        weaklings = tools.selWorst(offspring, (len(elites) * weaklingMultiplier))
         for i in weaklings:
             offspring.remove(i)
+        #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
 
         n_lost = n_pop - len(offspring) #No. of individuals lost due to 
         for i in range(n_lost):         #duplication or weaklings weeded out
@@ -490,7 +492,7 @@ def main():
         #remove dulicates in offspring (not practical unless new indvs added)
         #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
 
-
+#- End VIII ---------------------------------------------------------------------
 
         # The population is entirely replaced by the offspring
         random.shuffle(offspring)
@@ -549,8 +551,6 @@ def main():
     print "Best individuals by attack types are: "
     for i, j in enumerate(topknots):
         print "%20s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
-
-print "UNIQ ALL AT END's", uniq_all
 
 if __name__ == "__main__":
     main()

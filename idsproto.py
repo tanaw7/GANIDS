@@ -3,6 +3,7 @@ import fileinput
 import bisect
 import itertools #eliminate duplicate lists in a list
 import re        #for multiple delimiters in dataset files
+import copy      #for making an unshared copy
 from time import time
 from evalFuncs import *
 
@@ -18,23 +19,23 @@ start_time = time()
 #fileName = 'w1_tue.list'
 #fileName = 'w1_wed.list'
 #fileName = 'w1_thu.list'
-fileName = 'w1_fri.list' 
-#fileName = 'bsm.list'
+#fileName = 'w1_fri.list'
+#fileName = 'mixed.list' 
+fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 800 # Number of individuals in the whole population
+n_pop = 600 # Number of individuals in the whole population
 
 if n_pop > 800:
     elitesNo = 10
 else:
-    elitesNo = n_pop/50 # elites per attack type chosen for next gen
+    elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.03, 400
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 600
 
-wildcardWeight = 0.9#0.1 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.1#0.1 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
-#------THIS wildCardPenalty looks slightly strange on the results, investigate!
 wildcardPenalty = True #note: maybe deduction should be at result, not in loop
 wildcardPenaltyWeight = 0.000001
 wildcard_allowance = 2 # 1 to 15
@@ -170,7 +171,7 @@ uniq_all.append(uniq_desip_4thoct)
 uniq_all.append(uniq_attack)
 
 #return uniq_all #when put in a function
-
+print "UNIQ ALLL", uniq_all
 
 #END II----------------------------------------------------------------
 
@@ -205,7 +206,7 @@ def chromosomizor(): #A function for building a chromosome.
             if i == 14:
                 weight[u] = (1 - wcw)/(len(uniq_all[i]))
             else:    
-                weight[u] = (1 - wcw)/(len(uniq_all[i]) - 1)
+                weight[u] = (1 - wcw)/(len(uniq_all[i]))
         weight[-1] = wcw
         
         items = weight.keys()
@@ -336,10 +337,12 @@ for the next generation.
 #END VI---------------------------------------------------------
 
 #-- VII Mutation operator---------------------------------------
-unique_all_app = uniq_all
+print "\n##UNIQ ALL BEfor mutators##", uniq_all
+unique_all_app = copy.deepcopy(uniq_all)
 for i, field in enumerate(unique_all_app):
     if i != 14:
         field.append(-1)
+print "\n##UNIQ ALL after mutators + <-1></-1>##", uniq_all
 
 def mutator(individaul):
     mutant = toolbox.empty_individual()
@@ -352,6 +355,16 @@ def mutator(individaul):
             field = random.choice(unique_types[i])
             #print field, unique_types[i],
         mutant.append(field)
+    return mutant
+
+def mutateWcardGene(individaul):
+    mutant = toolbox.clone(individaul)
+    for i, field in enumerate(mutant):
+        unique_types = uniq_all
+        #print unique_types
+        if random.random() < 1.0: #0.2:
+            if field == -1:
+                mutant[i] = random.choice(unique_types[i])
     return mutant
 #---------------------------------------------------------------
 
@@ -408,9 +421,9 @@ def main():
         
         # Select the next generation individuals
         elites = toolbox.selectE(pop) # select elites for next gen
-        if show_elites == True:
-            for idx, i in enumerate(elites):
-                print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
+        #if show_elites == True:
+        #    for idx, i in enumerate(elites):
+        #        print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
         
 
         offspring = toolbox.select(pop, len(pop))
@@ -420,6 +433,7 @@ def main():
         # Apply crossover on the offspring individuals
         # first we shuffle list members positions.
         # Then we mate every two members next to one another
+        random.shuffle(offspring)
         random.shuffle(offspring) 
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
             if random.random() < CXPB:
@@ -479,8 +493,8 @@ def main():
 
 
         # The population is entirely replaced by the offspring
+        random.shuffle(offspring)
         pop[:] = offspring
-        print "###POPPPPPPP####", len(pop)
         
         # Gather all the fitnesses in one list and print the stats
         fits = [ind.fitness.values[0] for ind in pop]
@@ -498,7 +512,12 @@ def main():
         print(" Max %s" % max(fits))
         print(" mxp %.3f %%" % mxp)
         print(" Avg %s" % mean)
-        print(" Std %s" % std)
+        print(" Std %s \n" % std)
+        if show_elites == True:
+            for idx, i in enumerate(elites):
+                print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
+        print("------End Generation %s" % k)
+        print "\n"
         #print fitnesses
 
 # for i in pop: #prints initial population
@@ -526,9 +545,12 @@ def main():
         print "%3d" % i, "fv: %.6f" % j.fitness.values, j
 
     topknots = toolbox.selectE(bestInds)
+    print "\n\n"
     print "Best individuals by attack types are: "
     for i, j in enumerate(topknots):
         print "%20s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+
+print "UNIQ ALL AT END's", uniq_all
 
 if __name__ == "__main__":
     main()

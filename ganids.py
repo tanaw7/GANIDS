@@ -1,5 +1,5 @@
 """
-*  GANIDS (beta 0.9) - Genetic Algorithms for Deriving Network Intusion Rules
+*  GANIDS (beta 0.9) - Genetic Algorithms for Deriving Network Intrusion Rules
 *
 *    Copyright (C) 2013 Tanapuch Wanwarang (Niklas) <nik.csec@gmail.com>
 *

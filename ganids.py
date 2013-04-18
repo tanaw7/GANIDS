@@ -19,14 +19,14 @@
 *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import random
-import fileinput
-import bisect
-import itertools        #eliminate duplicate lists in a list
+import random           #for most of the things done here
+import fileinput        #for reading an audit dataset
+import bisect           #for mapping different weights for members in a list
+import itertools        #for eliminating duplicate lists in a list
 import re               #for multiple delimiters in dataset files
 import copy             #for making an unshared copy
 from time import time   #for counting the amount of time GANIDS runs
-from evalFuncs import *
+
 
 from deap import base
 from deap import creator
@@ -42,10 +42,10 @@ start_time = time()
 #fileName = 'w1_thu.list'
 #fileName = 'w1_fri.list'
 #fileName = 'mixed.list'
-fileName = 'mixed_all.list' 
-#fileName = 'bsm.list'
+#fileName = 'mixed_all.list' 
+fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 1000 #400# Number of individuals in the whole population
+n_pop = 600 #400# Number of individuals in the whole population
 
 if n_pop > 800:
     elitesNo = n_pop/100#10
@@ -53,19 +53,19 @@ else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 800#400
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 600#400
 
-wildcardWeight = 0.999#0.1 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #note: maybe deduction should be at result, not in loop
-wildcardPenaltyWeight = 0.0000000000000001#0.000001
+wildcardPenaltyWeight = 0.000001#0.0000000000000001#
 wildcard_allowance = 2 # 1 to 15
 
-Result_numbers = 800
+Result_numbers = 30 #800 #30
 show_elites = True
 
-mutateElitesWildcards = True   #mutate elites genes when there are wildcards
+mutateElitesWildcards = False   #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 0.1 #result: better fitness
                                #good combination when wildcardWeight is high
 
@@ -432,124 +432,129 @@ def main():
     # Begin the evolution
     round_gen = 0
     for g in range(NGEN):
+        try:
+            k = g+1
+            round_gen += 1
+            print("-- Generation %i --" % k)
 
-        k = g+1
-        round_gen += 1
-        print("-- Generation %i --" % k)
+            # Initialize new population
+            offspring = []
+            
+            # Select the next generation individuals
+            elites = toolbox.selectE(pop) # select elites for next gen
+            #if show_elites == True:
+            #    for idx, i in enumerate(elites):
+            #        print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
+            
 
-        # Initialize new population
-        offspring = []
-        
-        # Select the next generation individuals
-        elites = toolbox.selectE(pop) # select elites for next gen
-        #if show_elites == True:
-        #    for idx, i in enumerate(elites):
-        #        print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
-        
+            offspring = toolbox.select(pop, len(pop))
+            # Clone the selected individuals
+            offspring = list(map(toolbox.clone, offspring))
 
-        offspring = toolbox.select(pop, len(pop))
-        # Clone the selected individuals
-        offspring = list(map(toolbox.clone, offspring))
+            # Apply crossover on the offspring individuals
+            # first we shuffle list members positions.
+            # Then we mate every two members next to one another
+            random.shuffle(offspring)
+            random.shuffle(offspring) 
+            for child1, child2 in zip(offspring[::2], offspring[1::2]):
+                if random.random() < CXPB:
+                    toolbox.mate(child1, child2)
+                    del child1.fitness.values
+                    del child2.fitness.values
 
-        # Apply crossover on the offspring individuals
-        # first we shuffle list members positions.
-        # Then we mate every two members next to one another
-        random.shuffle(offspring)
-        random.shuffle(offspring) 
-        for child1, child2 in zip(offspring[::2], offspring[1::2]):
-            if random.random() < CXPB:
-                toolbox.mate(child1, child2)
-                del child1.fitness.values
-                del child2.fitness.values
+            # Apply mutation on the offsping individuals
+            for idx, individual in enumerate(offspring):
+                if random.random() < enterMutation: # no need bcuz MUTPB in def
+                    mutor = toolbox.clone(individual)
+                    #print dir(mutor)
+                    #print "##IND##", individual
+                    mutor = toolbox.mutate(individual)
+                    #print "##MUT##", mutor
+                    del mutor.fitness.values
+                    offspring[idx] = mutor
 
-        # Apply mutation on the offsping individuals
-        for idx, individual in enumerate(offspring):
-            if random.random() < enterMutation: # no need bcuz MUTPB in def
-                mutor = toolbox.clone(individual)
-                #print dir(mutor)
-                #print "##IND##", individual
-                mutor = toolbox.mutate(individual)
-                #print "##MUT##", mutor
-                del mutor.fitness.values
-                offspring[idx] = mutor
+        #mutant = toolbox.clone(ind1)
+        #ind2, = tools.mutGaussian(mutant, mu=0.0, sigma=0.2, indpb=0.2)
+        #del mutant.fitness.values
 
-    #mutant = toolbox.clone(ind1)
-    #ind2, = tools.mutGaussian(mutant, mu=0.0, sigma=0.2, indpb=0.2)
-    #del mutant.fitness.values
+    #-- VIII -- Optimizers --------------------------------------------------------
 
-#-- VIII -- Optimizers --------------------------------------------------------
-
-    #    print "###", len(offspring)
-        for i in elites:
-            offspring.append(i)
-
-        weaklingMultiplier = 1
-
-        if mutateElitesWildcards == True:
-            weaklingMultiplier += 1
+        #    print "###", len(offspring)
             for i in elites:
-                offspring.append(mutateWcardGene(i))
-    #    print "###", len(offspring)
+                offspring.append(i)
 
-        weaklings = tools.selWorst(offspring, (len(elites) * weaklingMultiplier))
-        for i in weaklings:
-            offspring.remove(i)
+            weaklingMultiplier = 1
 
-        #This could be used in the same way to eliminate individuals like weaklings but..
-        #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
+            if mutateElitesWildcards == True:
+                weaklingMultiplier += 1
+                for i in elites:
+                    offspring.append(mutateWcardGene(i))
+        #    print "###", len(offspring)
 
-        n_lost = n_pop - len(offspring) #No. of individuals lost due to 
-        for i in range(n_lost):         #duplication or weaklings weeded out
-            new_ind = toolbox.individual()
-            offspring.append(new_ind)   #we replace them
+            weaklings = tools.selWorst(offspring, (len(elites) * weaklingMultiplier))
+            for i in weaklings:
+                offspring.remove(i)
 
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        fitnesses = map(toolbox.evaluate, invalid_ind)
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
+            #This could be used in the same way to eliminate individuals like weaklings but..
+            #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
+
+            n_lost = n_pop - len(offspring) #No. of individuals lost due to 
+            for i in range(n_lost):         #duplication or weaklings weeded out
+                new_ind = toolbox.individual()
+                offspring.append(new_ind)   #we replace them
+
+            # Evaluate the individuals with an invalid fitness
+            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+            fitnesses = map(toolbox.evaluate, invalid_ind)
+            for ind, fit in zip(invalid_ind, fitnesses):
+                ind.fitness.values = fit
 
 
-        print(" Evaluated %i individuals" % len(invalid_ind))
-        
-        #remove dulicates in offspring (not practical unless new indvs added)
-        #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
+            print(" Evaluated %i individuals" % len(invalid_ind))
+            
+            #remove dulicates in offspring (not practical unless new indvs added)
+            #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
 
-#- End VIII ---------------------------------------------------------------------
+    #- End VIII ---------------------------------------------------------------------
 
-        # The population is entirely replaced by the offspring
-        random.shuffle(offspring)
-        pop[:] = offspring
+            # The population is entirely replaced by the offspring
+            random.shuffle(offspring)
+            pop[:] = offspring
 
-#-- IX --- Statistics and Each loop Outputs -------------------------------------
+    #-- IX --- Statistics and Each loop Outputs -------------------------------------
 
-        # Gather all the fitnesses in one list and print the stats
-        fits = [ind.fitness.values[0] for ind in pop]
-        
-        length = len(pop)
-        mean = sum(fits) / length
-        sum2 = sum(x*x for x in fits)
-        std = abs(sum2 / length - mean**2)**0.5
-        mx = float(max(fits))
-        mxp = (mx*100) / n_inds
+            # Gather all the fitnesses in one list and print the stats
+            fits = [ind.fitness.values[0] for ind in pop]
+            
+            length = len(pop)
+            mean = sum(fits) / length
+            sum2 = sum(x*x for x in fits)
+            std = abs(sum2 / length - mean**2)**0.5
+            mx = float(max(fits))
+            mxp = (mx*100) / n_inds
 
-        print(" genes %s" % n_inds)
-        print(" individuals %s" % len(pop))
-        print(" Min %s" % min(fits))
-        print(" Max %s" % max(fits))
-        print(" mxp %.3f %%" % mxp)
-        print(" Avg %s" % mean)
-        print(" Std %s \n" % std)
-        if show_elites == True and elitesNo >= 10:
-            bestElites = tools.selBest(elites,20)
-            for idx, i in enumerate(bestElites):
-                print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
-        elif show_elites == True:
-            for idx, i in enumerate(elites):
-                print "%3d" % idx, "fv: %.6f" % i.fitness.values, i            
-        print("------End Generation %s" % k)
-        print "\n"
-        #print fitnesses
+            print(" genes %s" % n_inds)
+            print(" individuals %s" % len(pop))
+            print(" Min %s" % min(fits))
+            print(" Max %s" % max(fits))
+            print(" mxp %.3f %%" % mxp)
+            print(" Avg %s" % mean)
+            print(" Std %s \n" % std)
+            if show_elites == True and elitesNo >= 6:
+                bestElites = tools.selBest(elites,20)
+                for idx, i in enumerate(bestElites):
+                    print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
+            elif show_elites == True:
+                for idx, i in enumerate(elites):
+                    print "%3d" % idx, "fv: %.6f" % i.fitness.values, i            
+            print("------End Generation %s" % k)
+            print "\n"
+            #print fitnesses
+        except KeyboardInterrupt:
+            print "You hit Crt-C to prematurely exit the loop"
+            break
+
+    
 #- End IX -------------------------------------------------------------------------
 
 # for i in pop: #prints initial population
@@ -559,7 +564,6 @@ def main():
         # break
     
 # print("-- End of (as NGEN set) evolution --")
-    print round_gen, "rounds"
     #best_ind = tools.selBest(pop, 1)[0]
     print "Best individuals are: " #% (best_ind, best_ind.fitness.values))
     bestInds = tools.selBest(pop, Result_numbers)
@@ -582,6 +586,8 @@ def main():
     for i, j in enumerate(topknots):
         if j.fitness.values[0] > 0.0:
             print "%36s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+
+    print "We ran", round_gen, "rounds"
 
 if __name__ == "__main__":
     main()
@@ -608,15 +614,4 @@ of genes being produced. Average rate would come to a stand still.
 And if the zeroeth generation is generated lacking in variety, then
 it is difficult to get the individuals to evolve much farther.
 
-
 """
-
-    #---del later, this was simulated to gain understanding
-    # more of map(), zip()
-    #ass = selElites(pop)
-    #fitneys = list(map(toolbox.evaluate, ass))
-    #for k, j in zip(ass, fitneys):
-    # k.fitness.values = j
-
-    #for i in ass:
-    # print i.fitness.uniqe_values

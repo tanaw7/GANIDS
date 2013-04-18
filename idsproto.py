@@ -20,30 +20,33 @@ start_time = time()
 #fileName = 'w1_wed.list'
 #fileName = 'w1_thu.list'
 #fileName = 'w1_fri.list'
-#fileName = 'mixed.list' 
-fileName = 'bsm.list'
+#fileName = 'mixed.list'
+fileName = 'mixed_all.list' 
+#fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 800 # Number of individuals in the whole population
+n_pop = 1000 #400# Number of individuals in the whole population
 
 if n_pop > 800:
-    elitesNo = 10
+    elitesNo = n_pop/100#10
 else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 600
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 800#400
 
-wildcardWeight = 0.1#0.1 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.999#0.1 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #note: maybe deduction should be at result, not in loop
-wildcardPenaltyWeight = 0.000001
+wildcardPenaltyWeight = 0.0000000000000001#0.000001
 wildcard_allowance = 2 # 1 to 15
 
-Result_numbers = 30
+Result_numbers = 800
 show_elites = True
 
-mutateElitesWildcards = False
+mutateElitesWildcards = True   #mutate elites genes when there are wildcards
+mutateElitesWildcards_PB = 0.1 #result: better fitness
+                               #good combination when wildcardWeight is high
 
 #------------------------------------------------------
 
@@ -361,9 +364,8 @@ def mutateWcardGene(individaul): #use to mutate wildcard genes of elites
     for i, field in enumerate(mutant):
         unique_types = uniq_all
         #print unique_types
-        if random.random() < 0.01: #0.2:
-            if field == -1:
-                mutant[i] = random.choice(unique_types[i])
+        if (field == -1) and (random.random() < mutateElitesWildcards_PB): #0.2:
+            mutant[i] = random.choice(unique_types[i])
         del mutant.fitness.values
     return mutant
 #---------------------------------------------------------------
@@ -473,6 +475,8 @@ def main():
         weaklings = tools.selWorst(offspring, (len(elites) * weaklingMultiplier))
         for i in weaklings:
             offspring.remove(i)
+
+        #This could be used in the same way to eliminate individuals like weaklings but..
         #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
 
         n_lost = n_pop - len(offspring) #No. of individuals lost due to 
@@ -515,9 +519,13 @@ def main():
         print(" mxp %.3f %%" % mxp)
         print(" Avg %s" % mean)
         print(" Std %s \n" % std)
-        if show_elites == True:
-            for idx, i in enumerate(elites):
+        if show_elites == True and elitesNo >= 10:
+            bestElites = tools.selBest(elites,20)
+            for idx, i in enumerate(bestElites):
                 print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
+        elif show_elites == True:
+            for idx, i in enumerate(elites):
+                print "%3d" % idx, "fv: %.6f" % i.fitness.values, i            
         print("------End Generation %s" % k)
         print "\n"
         #print fitnesses
@@ -550,7 +558,8 @@ def main():
     print "\n\n"
     print "Best individuals by attack types are: "
     for i, j in enumerate(topknots):
-        print "%20s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+        if j.fitness.values[0] > 0.0:
+            print "%36s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
 
 if __name__ == "__main__":
     main()

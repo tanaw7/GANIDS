@@ -4,28 +4,33 @@
 #fileName = 'w1_tue.list'
 #fileName = 'w1_wed.list'
 #fileName = 'w1_thu.list'
-#fileName = 'w1_fri.list' 
+#fileName = 'w1_fri.list'
+#fileName = 'mixed.list' 
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 800 # Number of individuals in the whole population
+n_pop = 800 #400# Number of individuals in the whole population
 
 if n_pop > 800:
-    elitesNo = 10
+    elitesNo = n_pop/100#10
 else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 800
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 400#400
 
 wildcardWeight = 0.1#0.1 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #note: maybe deduction should be at result, not in loop
-wildcardPenaltyWeight = 0.000001
+wildcardPenaltyWeight = 0.0000000000000001#0.000001
 wildcard_allowance = 2 # 1 to 15
 
 Result_numbers = 30
 show_elites = True
+
+mutateElitesWildcards = False   #mutate elites genes when there are wildcards
+mutateElitesWildcards_PB = 0.1 #result: better fitness
+                               #good combination when wildcardWeight is high
 
 #------------------------------------------------------
 
@@ -58,4 +63,75 @@ wildcard_allowance = 2 # 1 to 15
 Result_numbers = 30
 show_elites = True
 
+#--------------------------------------------------------
+
+#--CONTROL PANEL for DARPA mixed.list (any large one with multiple attacks)
+#------Modifiable variables (notable ones)----------------
+#fileName = 'w1_mon.list' # Training datasets file
+#fileName = 'w1_tue.list'
+#fileName = 'w1_wed.list'
+#fileName = 'w1_thu.list'
+#fileName = 'w1_fri.list'
+fileName = 'mixed.list' 
+#fileName = 'bsm.list'
+n_inds = 15 # Number of genes in each individual [shd not be modified]
+n_pop = 800 #400# Number of individuals in the whole population
+
+if n_pop > 800:
+    elitesNo = n_pop/100#10
+else:
+    elitesNo = n_pop/100 # elites per attack type chosen for next gen
+
+#CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 400#400
+
+wildcardWeight = 0.999#0.1 #chance that a gene initialized is a wildcard
+weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
+
+wildcardPenalty = True #note: maybe deduction should be at result, not in loop
+wildcardPenaltyWeight = 0.0000000000000001#0.000001
+wildcard_allowance = 2 # 1 to 15
+
+Result_numbers = 30
+show_elites = True
+
+mutateElitesWildcards = True   #mutate elites genes when there are wildcards
+mutateElitesWildcards_PB = 0.1 #result: better fitness
+                               #good combination when wildcardWeight is high
+
 #------------------------------------------------------
+
+#--CONTROL PANEL for DARPA mixed_all.list (any 2500+ one with multiple attacks)
+#------Modifiable variables (notable ones)----------------
+#fileName = 'w1_mon.list' # Training datasets file
+#fileName = 'w1_tue.list'
+#fileName = 'w1_wed.list'
+#fileName = 'w1_thu.list'
+#fileName = 'w1_fri.list'
+#fileName = 'mixed.list'
+fileName = 'mixed_all.list' 
+#fileName = 'bsm.list'
+n_inds = 15 # Number of genes in each individual [shd not be modified]
+n_pop = 1000 #400# Number of individuals in the whole population
+
+if n_pop > 800:
+    elitesNo = n_pop/100#10
+else:
+    elitesNo = n_pop/100 # elites per attack type chosen for next gen
+
+#CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 800#400
+
+wildcardWeight = 0.999#0.1 #chance that a gene initialized is a wildcard
+weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
+
+wildcardPenalty = True #note: maybe deduction should be at result, not in loop
+wildcardPenaltyWeight = 0.0000000000000001#0.000001
+wildcard_allowance = 2 # 1 to 15
+
+Result_numbers = 800
+show_elites = True
+
+mutateElitesWildcards = True   #mutate elites genes when there are wildcards
+mutateElitesWildcards_PB = 0.1 #result: better fitness
+                               #good combination when wildcardWeight is high

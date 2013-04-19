@@ -43,22 +43,25 @@ start_time = time()
 #fileName = 'w1_fri.list'
 #fileName = 'mixed.list'
 #fileName = 'mixed_all.list' 
+#fileName = 'tcpdump.list'
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 600 #400# Number of individuals in the whole population
+n_pop = 800 #400# Number of individuals in the whole population
 
 if n_pop > 800:
     elitesNo = n_pop/100#10
 else:
-    elitesNo = n_pop/100 # elites per attack type chosen for next gen
+    elitesNo = n_pop/100#n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 600#400
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 400#400
 
 wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
-wildcardPenalty = True #note: maybe deduction should be at result, not in loop
+wildcardPenalty = True #note: does not apply to results
+                       #only apply in loop to increase variety of good results
+
 wildcardPenaltyWeight = 0.000001#0.0000000000000001#
 wildcard_allowance = 2 # 1 to 15
 
@@ -383,7 +386,7 @@ def mutateWcardGene(individaul): #use to mutate wildcard genes of elites
     for i, field in enumerate(mutant):
         unique_types = uniq_all
         #print unique_types
-        if (field == -1) and (random.random() < mutateElitesWildcards_PB): #0.2:
+        if (field == -1) and (random.random() < mutateElitesWildcards_PB):# and i != 3 and i != 4:
             mutant[i] = random.choice(unique_types[i])
         del mutant.fitness.values
     return mutant
@@ -535,6 +538,7 @@ def main():
 
             print(" genes %s" % n_inds)
             print(" individuals %s" % len(pop))
+            print(" Audit data: %s lines" % len(auditData))
             print(" Min %s" % min(fits))
             print(" Max %s" % max(fits))
             print(" mxp %.3f %%" % mxp)
@@ -564,7 +568,16 @@ def main():
         # break
     
 # print("-- End of (as NGEN set) evolution --")
-    #best_ind = tools.selBest(pop, 1)[0]
+    #for ind in pop:
+    #    del ind.fitness.values
+
+    global wildcardPenalty
+    wildcardPenalty = False
+    
+    fitnesses = list(map(toolbox.evaluate, pop)) #re-evaluate fitness without wildcard penalty
+    for ind, fit in zip(pop, fitnesses):
+        ind.fitness.values = fit  
+
     print "Best individuals are: " #% (best_ind, best_ind.fitness.values))
     bestInds = tools.selBest(pop, Result_numbers)
 

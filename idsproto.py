@@ -1,5 +1,5 @@
 """
-*  GANIDS (beta 0.9) - Genetic Algorithms for Deriving Network Intusion Rules
+*  GANIDS (beta 0.9) - Genetic Algorithms for Deriving Network Intrusion Rules
 *
 *    Copyright (C) 2013 Tanapuch Wanwarang (Niklas) <nik.csec@gmail.com>
 *
@@ -19,10 +19,10 @@
 *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import random
-import fileinput
-import bisect
-import itertools        #eliminate duplicate lists in a list
+import random           #for most of the things done here
+import fileinput        #for reading an audit dataset
+import bisect           #for mapping different weights for members in a list
+import itertools        #for eliminating duplicate lists in a list
 import re               #for multiple delimiters in dataset files
 import copy             #for making an unshared copy
 from time import time   #for counting the amount of time GANIDS runs
@@ -43,6 +43,7 @@ start_time = time()
 #fileName = 'w1_fri.list'
 #fileName = 'mixed.list'
 #fileName = 'mixed_all.list' 
+#fileName = 'tcpdump.list'
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 800 #400# Number of individuals in the whole population
@@ -50,15 +51,17 @@ n_pop = 800 #400# Number of individuals in the whole population
 if n_pop > 800:
     elitesNo = n_pop/100#10
 else:
-    elitesNo = n_pop/100 # elites per attack type chosen for next gen
+    elitesNo = n_pop/100#n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 600#400
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 400#400
 
 wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
-wildcardPenalty = True #note: maybe deduction should be at result, not in loop
+wildcardPenalty = True #note: does not apply to results
+                       #only apply in loop to increase variety of good results
+
 wildcardPenaltyWeight = 0.000001#0.0000000000000001#
 wildcard_allowance = 2 # 1 to 15
 
@@ -383,7 +386,7 @@ def mutateWcardGene(individaul): #use to mutate wildcard genes of elites
     for i, field in enumerate(mutant):
         unique_types = uniq_all
         #print unique_types
-        if (field == -1) and (random.random() < mutateElitesWildcards_PB): #0.2:
+        if (field == -1) and (random.random() < mutateElitesWildcards_PB):# and i != 3 and i != 4:
             mutant[i] = random.choice(unique_types[i])
         del mutant.fitness.values
     return mutant
@@ -535,12 +538,13 @@ def main():
 
             print(" genes %s" % n_inds)
             print(" individuals %s" % len(pop))
+            print(" Audit data: %s lines" % len(auditData))
             print(" Min %s" % min(fits))
             print(" Max %s" % max(fits))
             print(" mxp %.3f %%" % mxp)
             print(" Avg %s" % mean)
             print(" Std %s \n" % std)
-            if show_elites == True and elitesNo >= 10:
+            if show_elites == True and elitesNo >= 6:
                 bestElites = tools.selBest(elites,20)
                 for idx, i in enumerate(bestElites):
                     print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
@@ -564,8 +568,16 @@ def main():
         # break
     
 # print("-- End of (as NGEN set) evolution --")
-    print round_gen, "rounds"
-    #best_ind = tools.selBest(pop, 1)[0]
+    #for ind in pop:
+    #    del ind.fitness.values
+
+    global wildcardPenalty
+    wildcardPenalty = False
+    
+    fitnesses = list(map(toolbox.evaluate, pop)) #re-evaluate fitness without wildcard penalty
+    for ind, fit in zip(pop, fitnesses):
+        ind.fitness.values = fit  
+
     print "Best individuals are: " #% (best_ind, best_ind.fitness.values))
     bestInds = tools.selBest(pop, Result_numbers)
 
@@ -587,6 +599,8 @@ def main():
     for i, j in enumerate(topknots):
         if j.fitness.values[0] > 0.0:
             print "%36s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+
+    print "We ran", round_gen, "rounds"
 
 if __name__ == "__main__":
     main()

@@ -44,6 +44,7 @@ start_time = time()
 #fileName = 'mixed.list'
 #fileName = 'mixed_all.list' 
 #fileName = 'tcpdump.list'
+#fileName = 'pscan.list'
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 800 #400# Number of individuals in the whole population
@@ -51,7 +52,7 @@ n_pop = 800 #400# Number of individuals in the whole population
 if n_pop > 800:
     elitesNo = n_pop/100#10
 else:
-    elitesNo = n_pop/100#n_pop/100 # elites per attack type chosen for next gen
+    elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
 CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 400#400
@@ -59,17 +60,16 @@ CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 400#400
 wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
-wildcardPenalty = True #note: does not apply to results
-                       #only apply in loop to increase variety of good results
-
-wildcardPenaltyWeight = 0.000001#0.0000000000000001#
+wildcardPenalty = True #only apply in loop to increase variety of good results
+wildcardPenaltyWeight = 0.0000000000000001##0.000001#
 wildcard_allowance = 2 # 1 to 15
 
 Result_numbers = 30 #800 #30
+show_stats = True
 show_elites = True
 
 mutateElitesWildcards = False   #mutate elites genes when there are wildcards
-mutateElitesWildcards_PB = 0.1 #result: better fitness
+mutateElitesWildcards_PB = 0.0001 #result: better fitness
                                #good combination when wildcardWeight is high
 
 #------------------------------------------------------
@@ -438,7 +438,7 @@ def main():
         try:
             k = g+1
             round_gen += 1
-            print("-- Generation %i --" % k)
+            
 
             # Initialize new population
             offspring = []
@@ -513,7 +513,7 @@ def main():
                 ind.fitness.values = fit
 
 
-            print(" Evaluated %i individuals" % len(invalid_ind))
+            
             
             #remove dulicates in offspring (not practical unless new indvs added)
             #offspring = list(offspring for offspring,_ in itertools.groupby(offspring))
@@ -527,32 +527,35 @@ def main():
     #-- IX --- Statistics and Each loop Outputs -------------------------------------
 
             # Gather all the fitnesses in one list and print the stats
-            fits = [ind.fitness.values[0] for ind in pop]
-            
-            length = len(pop)
-            mean = sum(fits) / length
-            sum2 = sum(x*x for x in fits)
-            std = abs(sum2 / length - mean**2)**0.5
-            mx = float(max(fits))
-            mxp = (mx*100) / n_inds
+            if show_stats == True:
+                print("-- Generation %i --" % k)
+                print(" Evaluated %i individuals" % len(invalid_ind))
+                fits = [ind.fitness.values[0] for ind in pop]
+                
+                length = len(pop)
+                mean = sum(fits) / length
+                sum2 = sum(x*x for x in fits)
+                std = abs(sum2 / length - mean**2)**0.5
+                mx = float(max(fits))
+                mxp = (mx*100) / n_inds
 
-            print(" genes %s" % n_inds)
-            print(" individuals %s" % len(pop))
-            print(" Audit data: %s lines" % len(auditData))
-            print(" Min %s" % min(fits))
-            print(" Max %s" % max(fits))
-            print(" mxp %.3f %%" % mxp)
-            print(" Avg %s" % mean)
-            print(" Std %s \n" % std)
-            if show_elites == True and elitesNo >= 6:
-                bestElites = tools.selBest(elites,20)
-                for idx, i in enumerate(bestElites):
-                    print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
-            elif show_elites == True:
-                for idx, i in enumerate(elites):
-                    print "%3d" % idx, "fv: %.6f" % i.fitness.values, i            
-            print("------End Generation %s" % k)
-            print "\n"
+                print(" genes %s" % n_inds)
+                print(" individuals %s" % len(pop))
+                print(" Audit data: %s lines" % len(auditData))
+                print(" Min %s" % min(fits))
+                print(" Max %s" % max(fits))
+                print(" mxp %.3f %%" % mxp)
+                print(" Avg %s" % mean)
+                print(" Std %s \n" % std)
+                if show_elites == True and elitesNo >= 6:
+                    bestElites = tools.selBest(elites,20)
+                    for idx, i in enumerate(bestElites):
+                        print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
+                elif show_elites == True:
+                    for idx, i in enumerate(elites):
+                        print "%3d" % idx, "fv: %.6f" % i.fitness.values, i            
+                print("------End Generation %s" % k)
+                print "\n"
             #print fitnesses
         except KeyboardInterrupt:
             print "You hit Crt-C to prematurely exit the loop"
@@ -573,7 +576,8 @@ def main():
 
     global wildcardPenalty
     wildcardPenalty = False
-    
+    #wildcardPenalty = True
+
     fitnesses = list(map(toolbox.evaluate, pop)) #re-evaluate fitness without wildcard penalty
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit  

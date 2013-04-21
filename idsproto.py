@@ -47,7 +47,7 @@ fileName = 'mixed_all.list'
 #fileName = 'pscan.list'
 #fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 1400 #400# Number of individuals in the whole population
+n_pop = 2000 #400# Number of individuals in the whole population
 
 if n_pop > 800:
     elitesNo = n_pop/100#10
@@ -542,7 +542,7 @@ def main():
                 #mx = float(max(fits))
                 #mxp = (mx*100) / n_inds
 
-                print(" individuals: %s" % len(pop))
+                print(" population: %s" % len(pop))
                 print(" weaklings: %s" % len(weaklings))
                 print(" elites: %s" % len(elites))
                 print(" Mutated Elites: %s" % mutatedElites)

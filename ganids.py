@@ -47,7 +47,7 @@ start_time = time()
 #fileName = 'pscan.list'
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 800 #400# Number of individuals in the whole population
+n_pop = 400 #400# Number of individuals in the whole population
 
 if n_pop > 800:
     elitesNo = n_pop/100#10
@@ -68,7 +68,7 @@ Result_numbers = 30 #800 #30
 show_stats = True
 show_elites = True
 
-mutateElitesWildcards = False   #mutate elites genes when there are wildcards
+mutateElitesWildcards = True   #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 0.0001 #result: better fitness
                                #good combination when wildcardWeight is high
 
@@ -486,15 +486,18 @@ def main():
             for i in elites:
                 offspring.append(i)
 
-            weaklingMultiplier = 1
+            mutatedElites = 0
 
             if mutateElitesWildcards == True:
-                weaklingMultiplier += 1
+                
                 for i in elites:
-                    offspring.append(mutateWcardGene(i))
+                    mutant = mutateWcardGene(i)
+                    if mutant != i:
+                        mutatedElites += 1
+                        offspring.append(mutant)
         #    print "###", len(offspring)
 
-            weaklings = tools.selWorst(offspring, (len(elites) * weaklingMultiplier))
+            weaklings = tools.selWorst(offspring, (len(elites) + mutatedElites))
             for i in weaklings:
                 offspring.remove(i)
 
@@ -536,15 +539,17 @@ def main():
                 mean = sum(fits) / length
                 sum2 = sum(x*x for x in fits)
                 std = abs(sum2 / length - mean**2)**0.5
-                mx = float(max(fits))
-                mxp = (mx*100) / n_inds
+                #mx = float(max(fits))
+                #mxp = (mx*100) / n_inds
 
-                print(" genes %s" % n_inds)
-                print(" individuals %s" % len(pop))
+                print(" individuals: %s" % len(pop))
+                print(" weaklings: %s" % len(weaklings))
+                print(" elites: %s" % len(elites))
+                print(" Mutated Elites: %s" % mutatedElites)
                 print(" Audit data: %s lines" % len(auditData))
-                print(" Min %s" % min(fits))
-                print(" Max %s" % max(fits))
-                print(" mxp %.3f %%" % mxp)
+                #print(" Min %s" % min(fits))
+                #print(" Max %s" % max(fits))
+                #print(" mxp %.3f %%" % mxp)
                 print(" Avg %s" % mean)
                 print(" Std %s \n" % std)
                 if show_elites == True and elitesNo >= 6:

@@ -55,21 +55,21 @@ else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 400#400
+CXPB, enterMutation, MUTPB, NGEN = 0.2, 1.0, 0.8, 4000#400
 
 wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #only apply in loop to increase variety of good results
-wildcardPenaltyWeight = 0.0000000000000001##0.000001#
+wildcardPenaltyWeight = 0.00000000000000001#0.000001#
 wildcard_allowance = 2 # 1 to 15
 
-Result_numbers = 30 #800 #30
+Result_numbers = 50 #800 #30
 show_stats = True
 show_elites = True
 
-mutateElitesWildcards = True   #mutate elites genes when there are wildcards
-mutateElitesWildcards_PB = 0.0001 #result: better fitness
+mutateElitesWildcards = False   #mutate elites genes when there are wildcards
+mutateElitesWildcards_PB = 0.001 #result: better fitness
                                #good combination when wildcardWeight is high
 
 #------------------------------------------------------
@@ -270,26 +270,33 @@ toolbox.register("population", tools.initRepeat,
 # imported evalFuncs.py
 
 def evalSupCon(individual):
-    Nconnect = len(auditData)
+    Nconnect = float(len(auditData))
     matched_lines = 0.0
     wildcard = 0
     A = 0.0
     AnB = 0.0
-    w1 = weightSupport
-    w2 = weightConfidence
-    for line in auditData:
+    w1 = weightSupport #default 0.2
+    w2 = weightConfidence #default 0.8
+    for record in auditData:
         matched_fields = 0.0
 
-        for index, field in enumerate(line, start=0):
+        for index, field in enumerate(record, start=0):
             if (individual[index] == field) or (individual[index] == -1):
                 matched_fields = matched_fields + 1.0
             if (individual[index] == -1):
                 wildcard += 1
-        if matched_fields >= 14.0:
-            A += 1
-        if matched_fields == 15.0:
-            AnB += 1
+            if index == 13 and matched_fields == 14.0: #match_fields +1 method here is wrong, coz if one missed one then it shouldn't count as 14 or 15 so fix it!!!!
+                A += 1
+            if index == 14 and matched_fields == 15.0:
+                AnB += 1
 
+        #maybe this would work       ## UPDATE ### RESULT: it works!!!
+        #if index == 13 and matched_fields == 14.0: 
+        #    A += 1
+        #if index == 14 and matched_fields == 15.0:
+        #    AnB += 1
+                            #Wei Li's paper says that each field should have different
+                            #Matching weight, I think it's true, this could be improved.
     #print 'A:', A,
     #print 'AnB:', AnB
     support = AnB / Nconnect
@@ -298,6 +305,9 @@ def evalSupCon(individual):
     else:
         confidence = 0.0
     
+    #print support
+    #print confidence
+
     wildcard_deduct = wildcard * wildcardPenaltyWeight
     fitness = w1 * support + w2 * confidence
 
@@ -607,7 +617,7 @@ def main():
     print "Best individuals by attack types are: "
     for i, j in enumerate(topknots):
         if j.fitness.values[0] > 0.0:
-            print "%36s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+            print "%16s" % j[14][0:16], "%3d" % i, "fv: %.6f" % j.fitness.values, j
 
     print "We ran", round_gen, "rounds"
 

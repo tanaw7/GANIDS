@@ -47,7 +47,7 @@ fileName = 'mixed_all.list'
 #fileName = 'pscan.list'
 #fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 2000 #400# Number of individuals in the whole population
+n_pop = 1200 #400# Number of individuals in the whole population
 
 if n_pop > 800:
     elitesNo = n_pop/100#10
@@ -55,16 +55,16 @@ else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 4000#400
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 2000#400
 
-wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.99#0.8#0.9 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #only apply in loop to increase variety of good results
-wildcardPenaltyWeight = 0.0000000000000001##0.000001#
+wildcardPenaltyWeight = 0.00000000000000000000000001#0.0000000000000001##0.000001#
 wildcard_allowance = 2 # 1 to 15
 
-Result_numbers = 30 #800 #30
+Result_numbers = 2000 #800 #30
 show_stats = True
 show_elites = True
 
@@ -607,7 +607,7 @@ def main():
     print "Best individuals by attack types are: "
     for i, j in enumerate(topknots):
         if j.fitness.values[0] > 0.0:
-            print "%36s" % j[14], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+            print "%12s" % j[14][0:10], "%3d" % i, "fv: %.6f" % j.fitness.values, j
 
     print "We ran", round_gen, "rounds"
 

@@ -47,7 +47,7 @@ start_time = time()
 #fileName = 'pscan.list'
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 400 #400# Number of individuals in the whole population
+n_pop = 600 #400# Number of individuals in the whole population
 
 if n_pop > 800:
     elitesNo = n_pop/100#10
@@ -55,21 +55,21 @@ else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.2, 1.0, 0.8, 4000#400
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.3, 200#400
 
-wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.8#0.8#0.9 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #only apply in loop to increase variety of good results
-wildcardPenaltyWeight = 0.00000000000000001#0.000001#
-wildcard_allowance = 2 # 1 to 15
+wildcardPenaltyWeight = 0.00000001#0.000001#
+#wildcard_allowance = 2 # 1 to 15 #currently not in used nor implemented yet
 
-Result_numbers = 50 #800 #30
+Result_numbers = 800 #800 #30
 show_stats = True
 show_elites = True
 
-mutateElitesWildcards = False   #mutate elites genes when there are wildcards
-mutateElitesWildcards_PB = 0.001 #result: better fitness
+mutateElitesWildcards = True   #mutate elites genes when there are wildcards
+mutateElitesWildcards_PB = 0.01 #result: better fitness
                                #good combination when wildcardWeight is high
 
 #------------------------------------------------------
@@ -354,7 +354,7 @@ for the next generation.
 
 
     for i in elitesSub: #appending all elites to elitesAll list
-        i = list(i for i,_ in itertools.groupby(i))
+        i = list(i for i,_ in itertools.groupby(i)) #eliminate duplicate elites by attk type
         for j in i:
             elitesAll.append(j)
 
@@ -398,6 +398,8 @@ def mutateWcardGene(individaul): #use to mutate wildcard genes of elites
         #print unique_types
         if (field == -1) and (random.random() < mutateElitesWildcards_PB):# and i != 3 and i != 4:
             mutant[i] = random.choice(unique_types[i])
+            del mutant.fitness.values
+            break
         del mutant.fitness.values
     return mutant
 #---------------------------------------------------------------
@@ -558,20 +560,21 @@ def main():
                 print(" Mutated Elites: %s" % mutatedElites)
                 print(" Audit data: %s lines" % len(auditData))
                 #print(" Min %s" % min(fits))
-                #print(" Max %s" % max(fits))
+                print(" Max %s" % max(fits))
                 #print(" mxp %.3f %%" % mxp)
                 print(" Avg %s" % mean)
                 print(" Std %s \n" % std)
                 if show_elites == True and elitesNo >= 6:
                     bestElites = tools.selBest(elites,20)
                     for idx, i in enumerate(bestElites):
-                        print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
+                        print "%3d" % idx, "fv: %.14f" % i.fitness.values, i
                 elif show_elites == True:
                     for idx, i in enumerate(elites):
-                        print "%3d" % idx, "fv: %.6f" % i.fitness.values, i            
+                        print "%3d" % idx, "fv: %.14f" % i.fitness.values, i            
                 print("------End Generation %s" % k)
                 print "\n"
             #print fitnesses
+
         except KeyboardInterrupt:
             print "You hit Crt-C to prematurely exit the loop"
             break
@@ -617,7 +620,8 @@ def main():
     print "Best individuals by attack types are: "
     for i, j in enumerate(topknots):
         if j.fitness.values[0] > 0.0:
-            print "%16s" % j[14][0:16], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+            print "%9s" % j[14][0:16], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+            #print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
     print "We ran", round_gen, "rounds"
 

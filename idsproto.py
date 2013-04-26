@@ -42,12 +42,12 @@ start_time = time()
 #fileName = 'w1_thu.list'
 #fileName = 'w1_fri.list'
 #fileName = 'mixed.list'
-fileName = 'mixed_all.list' 
+#fileName = 'mixed_all.list' 
 #fileName = 'tcpdump.list'
 #fileName = 'pscan.list'
-#fileName = 'bsm.list'
+fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 1200 #400# Number of individuals in the whole population
+n_pop = 600 #400# Number of individuals in the whole population
 
 if n_pop > 800:
     elitesNo = n_pop/100#10
@@ -55,22 +55,24 @@ else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.8, 2000#400
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.1, 120#400
 
-wildcardWeight = 0.99#0.8#0.9 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #only apply in loop to increase variety of good results
-wildcardPenaltyWeight = 0.00000000000000000000000001#0.0000000000000001##0.000001#
-wildcard_allowance = 2 # 1 to 15
+wildcardPenaltyWeight = 0.00000001#0.000001#
+#wildcard_allowance = 2 # 1 to 15 #currently not in used nor implemented yet
 
-Result_numbers = 2000 #800 #30
+Result_numbers = 800 #800 #30
 show_stats = True
 show_elites = True
 
 mutateElitesWildcards = True   #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 0.01 #result: better fitness
                                #good combination when wildcardWeight is high
+
+baseWeaklings = 30
 
 #------------------------------------------------------
 
@@ -270,26 +272,33 @@ toolbox.register("population", tools.initRepeat,
 # imported evalFuncs.py
 
 def evalSupCon(individual):
-    Nconnect = len(auditData)
+    Nconnect = float(len(auditData))
     matched_lines = 0.0
     wildcard = 0
     A = 0.0
     AnB = 0.0
-    w1 = weightSupport
-    w2 = weightConfidence
-    for line in auditData:
+    w1 = weightSupport #default 0.2
+    w2 = weightConfidence #default 0.8
+    for record in auditData:
         matched_fields = 0.0
 
-        for index, field in enumerate(line, start=0):
+        for index, field in enumerate(record, start=0):
             if (individual[index] == field) or (individual[index] == -1):
                 matched_fields = matched_fields + 1.0
             if (individual[index] == -1):
                 wildcard += 1
-        if matched_fields >= 14.0:
-            A += 1
-        if matched_fields == 15.0:
-            AnB += 1
+            if index == 13 and matched_fields == 14.0: #match_fields +1 method here is wrong, coz if one missed one then it shouldn't count as 14 or 15 so fix it!!!!
+                A += 1
+            if index == 14 and matched_fields == 15.0:
+                AnB += 1
 
+        #maybe this would work       ## UPDATE ### RESULT: it works!!!
+        #if index == 13 and matched_fields == 14.0: 
+        #    A += 1
+        #if index == 14 and matched_fields == 15.0:
+        #    AnB += 1
+                            #Wei Li's paper says that each field should have different
+                            #Matching weight, I think it's true, this could be improved.
     #print 'A:', A,
     #print 'AnB:', AnB
     support = AnB / Nconnect
@@ -298,6 +307,9 @@ def evalSupCon(individual):
     else:
         confidence = 0.0
     
+    #print support
+    #print confidence
+
     wildcard_deduct = wildcard * wildcardPenaltyWeight
     fitness = w1 * support + w2 * confidence
 
@@ -344,7 +356,7 @@ for the next generation.
 
 
     for i in elitesSub: #appending all elites to elitesAll list
-        i = list(i for i,_ in itertools.groupby(i))
+        i = list(i for i,_ in itertools.groupby(i)) #eliminate duplicate elites by attk type
         for j in i:
             elitesAll.append(j)
 
@@ -388,6 +400,8 @@ def mutateWcardGene(individaul): #use to mutate wildcard genes of elites
         #print unique_types
         if (field == -1) and (random.random() < mutateElitesWildcards_PB):# and i != 3 and i != 4:
             mutant[i] = random.choice(unique_types[i])
+            del mutant.fitness.values
+            break
         del mutant.fitness.values
     return mutant
 #---------------------------------------------------------------
@@ -497,7 +511,7 @@ def main():
                         offspring.append(mutant)
         #    print "###", len(offspring)
 
-            weaklings = tools.selWorst(offspring, (len(elites) + mutatedElites))
+            weaklings = tools.selWorst(offspring, (baseWeaklings + len(elites) + mutatedElites))
             for i in weaklings:
                 offspring.remove(i)
 
@@ -542,26 +556,27 @@ def main():
                 #mx = float(max(fits))
                 #mxp = (mx*100) / n_inds
 
-                print(" population: %s" % len(pop))
+                print(" individuals: %s" % len(pop))
                 print(" weaklings: %s" % len(weaklings))
                 print(" elites: %s" % len(elites))
                 print(" Mutated Elites: %s" % mutatedElites)
                 print(" Audit data: %s lines" % len(auditData))
                 #print(" Min %s" % min(fits))
-                #print(" Max %s" % max(fits))
+                print(" Max %s" % max(fits))
                 #print(" mxp %.3f %%" % mxp)
                 print(" Avg %s" % mean)
                 print(" Std %s \n" % std)
                 if show_elites == True and elitesNo >= 6:
                     bestElites = tools.selBest(elites,20)
                     for idx, i in enumerate(bestElites):
-                        print "%3d" % idx, "fv: %.6f" % i.fitness.values, i
+                        print "%3d" % idx, "fv: %.14f" % i.fitness.values, i
                 elif show_elites == True:
                     for idx, i in enumerate(elites):
-                        print "%3d" % idx, "fv: %.6f" % i.fitness.values, i            
+                        print "%3d" % idx, "fv: %.14f" % i.fitness.values, i            
                 print("------End Generation %s" % k)
                 print "\n"
             #print fitnesses
+
         except KeyboardInterrupt:
             print "You hit Crt-C to prematurely exit the loop"
             break
@@ -580,8 +595,8 @@ def main():
     #    del ind.fitness.values
 
     global wildcardPenalty
-    wildcardPenalty = False
-    #wildcardPenalty = True
+    #wildcardPenalty = False
+    wildcardPenalty = True
 
     fitnesses = list(map(toolbox.evaluate, pop)) #re-evaluate fitness without wildcard penalty
     for ind, fit in zip(pop, fitnesses):
@@ -607,7 +622,8 @@ def main():
     print "Best individuals by attack types are: "
     for i, j in enumerate(topknots):
         if j.fitness.values[0] > 0.0:
-            print "%12s" % j[14][0:10], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+            print "%9s" % j[14][0:16], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+            #print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
     print "We ran", round_gen, "rounds"
 

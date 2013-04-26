@@ -55,9 +55,9 @@ else:
     elitesNo = n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.3, 200#400
+CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.1, 120#400
 
-wildcardWeight = 0.8#0.8#0.9 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #only apply in loop to increase variety of good results
@@ -71,6 +71,8 @@ show_elites = True
 mutateElitesWildcards = True   #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 0.01 #result: better fitness
                                #good combination when wildcardWeight is high
+
+baseWeaklings = 30
 
 #------------------------------------------------------
 
@@ -509,7 +511,7 @@ def main():
                         offspring.append(mutant)
         #    print "###", len(offspring)
 
-            weaklings = tools.selWorst(offspring, (len(elites) + mutatedElites))
+            weaklings = tools.selWorst(offspring, (baseWeaklings + len(elites) + mutatedElites))
             for i in weaklings:
                 offspring.remove(i)
 
@@ -593,8 +595,8 @@ def main():
     #    del ind.fitness.values
 
     global wildcardPenalty
-    wildcardPenalty = False
-    #wildcardPenalty = True
+    #wildcardPenalty = False
+    wildcardPenalty = True
 
     fitnesses = list(map(toolbox.evaluate, pop)) #re-evaluate fitness without wildcard penalty
     for ind, fit in zip(pop, fitnesses):

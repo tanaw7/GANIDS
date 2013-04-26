@@ -47,32 +47,38 @@ start_time = time()
 #fileName = 'pscan.list'
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 600 #400# Number of individuals in the whole population
+n_pop = 1200 #400# Number of individuals in the whole population
 
 if n_pop > 800:
-    elitesNo = n_pop/100#10
+    elitesNo = n_pop/100#n_pop/100#10
 else:
-    elitesNo = n_pop/100 # elites per attack type chosen for next gen
+    elitesNo = n_pop/100#n_pop/100 # elites per attack type chosen for next gen
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 1.0, 1.0, 0.1, 120#400
+CXPB, enterMutation, MUTPB, NGEN = 0.8, 1.0, 0.8, 800#400
 
-wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
+wcw_switching = True
+wcw_a = 0.1
+wcw_b = 0.9
+wcw_swapGen = 10
+
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #only apply in loop to increase variety of good results
 wildcardPenaltyWeight = 0.00000001#0.000001#
-#wildcard_allowance = 2 # 1 to 15 #currently not in used nor implemented yet
+wildcard_allowance = 0 # 1 to 15 #currently not in used nor implemented yet
 
 Result_numbers = 800 #800 #30
 show_stats = True
 show_elites = True
 
 mutateElitesWildcards = True   #mutate elites genes when there are wildcards
-mutateElitesWildcards_PB = 0.01 #result: better fitness
+mutateElitesWildcards_PB = 0.0001 #result: better fitness
                                #good combination when wildcardWeight is high
 
-baseWeaklings = 30
+baseWeaklings = 60 #with high wildcardWeight, it ensure the chance of finding
+                   #the maximum fitness much faster
 
 #------------------------------------------------------
 
@@ -313,7 +319,7 @@ def evalSupCon(individual):
     wildcard_deduct = wildcard * wildcardPenaltyWeight
     fitness = w1 * support + w2 * confidence
 
-    if (wildcardPenalty == True):# and (wildcard >= wildcard_allowance):
+    if (wildcardPenalty == True) and (wildcard >= wildcard_allowance):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
     
@@ -452,8 +458,13 @@ def main():
         try:
             k = g+1
             round_gen += 1
+            if wcw_switching == True:
+                if g%wcw_swapGen == 0:
+                    wildcardWeight = wcw_b
+                else:
+                    wildcardWeight = wcw_a
             
-
+            print wildcardWeight
             # Initialize new population
             offspring = []
             
@@ -606,7 +617,7 @@ def main():
     bestInds = tools.selBest(pop, Result_numbers)
 
     for i, j in enumerate(bestInds):
-        print "%3d" % i, "fv: %.6f" % j.fitness.values, j
+        print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
     print "\n\n"
     #Remove duplicate individuals from the results
@@ -615,14 +626,14 @@ def main():
     bestInds = list(bestInds for bestInds,_ in itertools.groupby(bestInds))
     print "Best individuals (duplications removed) are: "
     for i, j in enumerate(bestInds):
-        print "%3d" % i, "fv: %.6f" % j.fitness.values, j
+        print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
     topknots = toolbox.selectE(bestInds)
     print "\n\n"
     print "Best individuals by attack types are: "
     for i, j in enumerate(topknots):
         if j.fitness.values[0] > 0.0:
-            print "%9s" % j[14][0:16], "%3d" % i, "fv: %.6f" % j.fitness.values, j
+            print "%9s" % j[14][0:16], "%3d" % i, "fv: %.14f" % j.fitness.values, j
             #print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
     print "We ran", round_gen, "rounds"

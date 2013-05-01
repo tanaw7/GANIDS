@@ -39,45 +39,46 @@ start_time = time()
 #fileName = 'w1_mon.list' # Training datasets file
 #fileName = 'w1_tue.list'
 #fileName = 'w1_wed.list'
+#fileName = 'w1_wednesday.list'
 #fileName = 'w1_thu.list'
 #fileName = 'w1_fri.list'
 #fileName = 'mixed.list'
 #fileName = 'mixed_all.list' 
 #fileName = 'tcpdump.list'
+#fileName = 'w7_tcpdump.list'
 #fileName = 'pscan.list'
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 200 #400# Number of individuals in the whole population
+n_pop = 400 #400# Number of individuals in the whole population
 
-if n_pop > 800:
-    elitesNo = n_pop/100#n_pop/100#10
+if n_pop > 800:         # elites per attack type chosen for next gen
+    elitesNo = n_pop/20#n_pop/100#10
 else:
-    elitesNo = n_pop/100#n_pop/100 # elites per attack type chosen for next gen
-
+    elitesNo = n_pop/20#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.9, 1.0, 0.1, 40#400
+CXPB, enterMutation, MUTPB, NGEN = 0.7, 1, 0.1, 400#400
 
-wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
-wcw_switching = True
-wcw_a = 0.9
+wildcardWeight = 1#0.8#0.9 #chance that a gene initialized is a wildcard
+wcw_switching = False
+wcw_a = 0.1
 wcw_b = 0.9
 wcw_swapGen = 2
 
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
 wildcardPenalty = True #only apply in loop to increase variety of good results
-wildcardPenaltyWeight = 0.00000001#0.000001#
+wildcardPenaltyWeight = 0.000000000001#0.00000001#0.000001#
 wildcard_allowance = 0 # 1 to 15 #currently not in used nor implemented yet
 
 Result_numbers = n_pop#800 #800 #30
 show_stats = True
 show_elites = True
 
-mutateElitesWildcards = True   #mutate elites genes when there are wildcards
+mutateElitesWildcards = True     #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 1 #result: better fitness
                                #good combination when wildcardWeight is high
 
-baseWeaklings = n_pop/50 #with high wildcardWeight, it ensure the chance of finding
+baseWeaklings = n_pop/100 #with high wildcardWeight, it ensure the chance of finding
                    #the maximum fitness much faster
 
 #------------------------------------------------------
@@ -170,8 +171,11 @@ for i in auditData:
     uniq_desip_2ndoct.add(i[11])
     uniq_desip_3rdoct.add(i[12])
     uniq_desip_4thoct.add(i[13])
+    #uniq_attack.add(i[14])
     if i[14] != '-':
         uniq_attack.add(i[14])
+
+
 
 uniq_hour = list(uniq_hour)
 uniq_minute = list(uniq_minute)
@@ -293,16 +297,10 @@ def evalSupCon(individual):
                 matched_fields = matched_fields + 1.0
             if (individual[index] == -1):
                 wildcard += 1
-            if index == 13 and matched_fields == 14.0: #match_fields +1 method here is wrong, coz if one missed one then it shouldn't count as 14 or 15 so fix it!!!!
+            if index == 13 and matched_fields == 14.0: 
                 A += 1
             if index == 14 and matched_fields == 15.0:
                 AnB += 1
-
-        #maybe this would work       ## UPDATE ### RESULT: it works!!!
-        #if index == 13 and matched_fields == 14.0: 
-        #    A += 1
-        #if index == 14 and matched_fields == 15.0:
-        #    AnB += 1
                             #Wei Li's paper says that each field should have different
                             #Matching weight, I think it's true, this could be improved.
     #print 'A:', A,
@@ -322,8 +320,11 @@ def evalSupCon(individual):
     if (wildcardPenalty == True) and (wildcard >= wildcard_allowance):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
-    
+
+    #if wildcard == 0 and fitness > 0:
+    #    fitness = fitness - 0.01
     return fitness,
+    #return [(fitness,), A, AnB]
 
 #END IV -------------------------------------------------------
 
@@ -445,13 +446,16 @@ indy = popza[0]
 # more of map(), zip()
 #ass = selElites(popza)
 fitneys = list(map(toolbox.evaluate, popza))
+print fitneys[0]
+print i
+#for i, (k, j) in enumerate(zip(popza, (fitneys[i][0],))):
 for k, j in zip(popza, fitneys):
     k.fitness.values = j
 
-w1,w2 = toolbox.empty_individual(), toolbox.empty_individual()
-for i in range(15):
-    w1.append(-1)
-    w2.append(-1)
+#w1,w2 = toolbox.empty_individual(), toolbox.empty_individual()
+#for i in range(15):
+#    w1.append(-1)
+#    w2.append(-1)
 
 
 def main():
@@ -487,7 +491,7 @@ def main():
                 else:
                     wildcardWeight = wcw_a
             
-            print wildcardWeight
+            #print wildcardWeight
 
             # Initialize new population
             offspring = []
@@ -566,6 +570,8 @@ def main():
             # Evaluate the individuals with an invalid fitness
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
             fitnesses = map(toolbox.evaluate, invalid_ind)
+            #for i, (k, j) in enumerate(zip(popza, (fitneys[i][0],))):
+            
             for ind, fit in zip(invalid_ind, fitnesses):
                 ind.fitness.values = fit
 
@@ -671,25 +677,3 @@ if __name__ == "__main__":
     main()
 
 print "Took: ", time()-start_time, " seconds"
-
-"""
-**UPDATE**
-Tested against w1_fri.list
-The larger the input files, the more we might need to increase
-wildcardWeight at the start. And lower the GeneMutationRate.
-This will help the fitness values to start off faster, if not
-the only way.
-
-##PAST##
-I have found online that Elitism exists to prevent the chance
-of losing high-fitness value individuals that have been found
-So elites should be reserved[2ofHighestAttack] some slots in the
-next generation. Elitism should be a loop process as well.
-
-##Mutation##
-We need mutation because crossover alone would not lead to new value
-of genes being produced. Average rate would come to a stand still.
-And if the zeroeth generation is generated lacking in variety, then
-it is difficult to get the individuals to evolve much farther.
-
-"""

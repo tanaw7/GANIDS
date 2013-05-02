@@ -46,15 +46,15 @@ start_time = time()
 #fileName = 'mixed_all.list' 
 #fileName = 'tcpdump.list'
 #fileName = 'w7_tcpdump.list'
-#fileName = 'pscan.list'
-fileName = 'bsm.list'
+fileName = 'pscan.list'
+#fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 200 #400# Number of individuals in the whole population
+n_pop = 8000 #400# Number of individuals in the whole population
 
 if n_pop > 800:         # elites per attack type chosen for next gen
     elitesNo = n_pop/20#n_pop/100#10
 else:
-    elitesNo = n_pop/20#n_pop/100 
+    elitesNo = n_pop/100#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
 CXPB, enterMutation, MUTPB, NGEN = 0.9, 1, 0.1, 400#400
 
@@ -663,7 +663,6 @@ def main():
     for i, j in enumerate(bestInds):
         print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
-    #Show Best individuals by attack types
     topknots = toolbox.selectE(bestInds)
     print "\n\n"
     print "Best individuals by attack types are: "
@@ -673,12 +672,6 @@ def main():
             #print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
     print "We ran", round_gen, "rounds"
-
-    #Write result to rules.rcd file
-    rulesFile = open('rules.rcd', 'w+')
-    for item in topknots:
-        rulesFile.write("%s\n" % item)
-    rulesFile.close()
 
 if __name__ == "__main__":
     main()

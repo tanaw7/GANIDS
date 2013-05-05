@@ -56,7 +56,7 @@ if n_pop > 800:         # elites per attack type chosen for next gen
 else:
     elitesNo = n_pop/20#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.9, 1, 0.1, 400#400
+CXPB, enterMutation, MUTPB, NGEN = 0.9, 1, 0.1, 100#400
 
 wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
 wcw_switching = False
@@ -85,10 +85,10 @@ baseWeaklings = n_pop/100 #with high wildcardWeight, it ensure the chance of fin
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
 auditData = []
-nosplit = []
+#nosplit = []
 for line in fileinput.input([fileName]):
     line = line.rstrip('\r\n') # strip off the newline of each record
-    nosplit.append(line)
+    #nosplit.append(line)
     if len(line) > 0:
         line = re.sub(' +', ' ', line)
         array = line.split(" ")
@@ -677,7 +677,16 @@ def main():
     #Write result to rules.rcd file
     rulesFile = open('rules.rcd', 'w+')
     for item in topknots:
-        rulesFile.write("%s\n" % item)
+        line = ""
+        if item.fitness.values[0] > 0.0:
+            for i in item:
+                line = line.__add__(str(i) + ' ')
+            print line
+
+        #for i, j in enumerate(item):
+        #    line.__add__(str(j) + ' ')
+        #    print line
+            rulesFile.write("%s\n" % line)
     rulesFile.close()
 
 if __name__ == "__main__":

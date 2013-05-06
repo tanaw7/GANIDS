@@ -15,65 +15,29 @@ start_time = time()
 
 #--CONTROL PANEL---------------------------------------
 #------Modifiable variables (notable ones)----------------
-#fileName = 'w1_mon.list' # Training datasets file
-#fileName = 'w1_tue.list'
-#fileName = 'w1_wed.list'
-#fileName = 'w1_wednesday.list'
-#fileName = 'w1_thu.list'
-#fileName = 'w1_fri.list'
-#fileName = 'mixed.list'
-#fileName = 'mixed_all.list' 
-#fileName = 'tcpdump.list'
-#fileName = 'w7_tcpdump.list'
-#fileName = 'pscan.list'
-#fileName = 'bsm.list'
+
 fileRules = 'rules.rcd'
-fileTest = 'test_w1mon.list'
-
-n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 8000 #400# Number of individuals in the whole population
-
-if n_pop > 800:         # elites per attack type chosen for next gen
-    elitesNo = n_pop/20#n_pop/100#10
-else:
-    elitesNo = n_pop/100#n_pop/100 
-#CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.9, 1, 0.1, 400#400
-
-wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
-wcw_switching = False
-wcw_a = 0.4
-wcw_b = 0.9
-wcw_swapGen = 10
-
-weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
-
-wildcardPenalty = True #only apply in loop to increase variety of good results
-wildcardPenaltyWeight = 0.000000000001#0.00000001#0.000001#
-wildcard_allowance = 0 # 1 to 15 #currently not in used nor implemented yet
-
-Result_numbers = n_pop#800 #800 #30
-show_stats = True
-show_elites = True
-
-mutateElitesWildcards = True     #mutate elites genes when there are wildcards
-mutateElitesWildcards_PB = 1 #result: better fitness
-                               #good combination when wildcardWeight is high
-
-baseWeaklings = n_pop/100 #with high wildcardWeight, it ensure the chance of finding
-                   #the maximum fitness much faster
-
+#fileTest = 'test_w1mon.list'
+fileTest = 'w2_alltruth.list'
 #------------------------------------------------------
-
 
 auditData = []
 rules = []
+
 # I ---Read Rules Files-------------------------------------
 for line in fileinput.input([fileRules]):
     line = line.rstrip('\r\n') # strip off the newline of each record
     if len(line) > 0:
-        array = line.split(" ")
+        line = re.sub(' +', ' ', line)
+        array = line.split(" ") # returns a list containing each item in the record
+        del array[-1]
+        for idx, item in enumerate(array):
+            if idx != 3 and idx != 14 or item == '-1':
+                array[idx] = int(item) 
         rules.append(array)
+
+#for i in rules:
+#    print i
 # END I -----------------------------------------------------
 
 
@@ -86,11 +50,7 @@ for line in fileinput.input([fileTest]):
     if len(line) > 0:
         line = re.sub(' +', ' ', line)
         array = line.split(" ")
-# Now array looks like this
-#['1', '01/23/1998', '16:56:48', '00:01:26', 'telnet', '1754', '23',
-# '192.168.1.30', '192.168.0.20', '0', '-']
 
-# Below we reconstruct the audit data to have chromosome-like structure.
         line = []
         #---Duration
         line.append(int(array[3][0:2])) #append hour as gene into chromosome
@@ -123,8 +83,74 @@ for line in fileinput.input([fileTest]):
         #---Attack type
         line.append(array[10])
 
-
     auditData.append(line)
 
 #for i, j in enumerate(auditData):
 #    print i, j
+
+# END II --------------------------------------------------------------
+
+
+# III -----------------------Match function----------------------------
+
+match_cc = 0
+match_at = 0
+rule_no = 0
+def testMatch(rule):
+    global match_cc
+    global match_at
+    global rule_no
+
+    rule_no += 1
+
+    #Nconnect = float(len(auditData))
+    matched_lines = 0
+    wildcard = 0
+    matchConn = 0
+    matchAttk = 0
+    match_list = []
+
+    for record in auditData:
+        matched_fields = 0
+        for index, field in enumerate(record, start=0):
+            if (rule[index] == field) or (rule[index] == -1):
+                matched_fields = matched_fields + 1
+            #if (rule[index] == -1): #may not need
+            #    wildcard += 1
+            if index == 13 and matched_fields == 14: 
+                matchConn += 1
+                match_cc += 1
+                #print "Matched Connection"
+                #print match_cc
+                match_list.append(record)
+                #print "rule: ", rule
+                #print "audit:", record
+            if index == 14 and matched_fields == 15:
+                matchAttk += 1
+                match_at += 1
+                #print "Matched Attack"
+                #print match_at
+
+    if len(match_list) > 0:
+        print "\n"
+        print "-@ rule %s -@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@" % rule_no
+        print rule
+        
+        print "Matched Connections below: "
+        for i in match_list:
+            print i
+        print "Matched Connections No:", matchConn
+    
+    return "haha"
+
+# END III ----------------------------------------------------------------------------
+
+#print len(rules)
+#print len(auditData)
+
+for i, j in enumerate(rules):
+    #print "rule No.:", i 
+    testMatch(j)
+
+
+

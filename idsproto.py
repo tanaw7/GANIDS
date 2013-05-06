@@ -46,21 +46,22 @@ start_time = time()
 #fileName = 'mixed_all.list' 
 #fileName = 'tcpdump.list'
 #fileName = 'w7_tcpdump.list'
+#fileName = 'mixed_pod_test.list'
 #fileName = 'pscan.list'
 fileName = 'bsm.list'
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 200 #400# Number of individuals in the whole population
+n_pop = 400 #400# Number of individuals in the whole population
 
 if n_pop > 800:         # elites per attack type chosen for next gen
     elitesNo = n_pop/20#n_pop/100#10
 else:
     elitesNo = n_pop/20#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.9, 1, 0.1, 100#400
+CXPB, enterMutation, MUTPB, NGEN = 0.9, 1, 0.1, 200#400
 
 wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
-wcw_switching = False
-wcw_a = 0.4
+wcw_switching = True
+wcw_a = 0.5
 wcw_b = 0.9
 wcw_swapGen = 10
 
@@ -73,6 +74,7 @@ wildcard_allowance = 0 # 1 to 15 #currently not in used nor implemented yet
 Result_numbers = n_pop#800 #800 #30
 show_stats = True
 show_elites = True
+bestTopKnots = 2
 
 mutateElitesWildcards = True     #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 1 #result: better fitness
@@ -108,12 +110,12 @@ for line in fileinput.input([fileName]):
         if array[5] != '-':
             line.append(int(array[5]))
         else:
-            line.append(0)
+            line.append(-1)
         #---Destination Port
         if array[6] != '-':
             line.append(int(array[6]))
         else:
-            line.append(0)
+            line.append(-1)
         #---Source IP
         ip = array[7].split(".")
         line.append(int(ip[0])) #1st octet
@@ -656,7 +658,7 @@ def main():
 
     print "\n\n"
     #Remove duplicate individuals from the results
-    bestInds.sort()
+    #bestInds.sort()
     bestInds = tools.selBest(bestInds, len(bestInds))
     bestInds = list(bestInds for bestInds,_ in itertools.groupby(bestInds))
     print "Best individuals (duplications removed) are: "
@@ -664,13 +666,71 @@ def main():
         print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
     #Show Best individuals by attack types
-    topknots = toolbox.selectE(bestInds)
+    bestAttkTypes = toolbox.selectE(bestInds)
     print "\n\n"
     print "Best individuals by attack types are: "
-    for i, j in enumerate(topknots):
+    for i, j in enumerate(bestAttkTypes):
         if j.fitness.values[0] > 0.0:
             print "%9s" % j[14][0:16], "%3d" % i, "fv: %.14f" % j.fitness.values, j
             #print "%3d" % i, "fv: %.14f" % j.fitness.values, j
+
+
+# TOPKNOTS Filter -------------------------------------------------------------------
+    #uniq_attack
+    topknots = []
+    
+    for i in uniq_attack:
+        space = []
+        #topgun = toolbox.empty_individual()
+        for j in bestAttkTypes:
+            if j[-1] == i:
+                space.append(j)
+        #space.sort()
+        topgun = tools.selBest(space, 1)
+        topgun = topgun[0]
+
+        print "\n\nBEFORE SPACE: "
+        for idx, i in enumerate(space):
+            print idx, i.fitness.values, i
+
+        print "topgun of %s: " % topgun[-1], topgun
+        for idx, ind in enumerate(space):
+            print (topgun.fitness.values[0] - ind.fitness.values[0]) <= 0.001
+            print idx ,ind.fitness.values, ind
+            if (topgun.fitness.values[0] - ind.fitness.values[0]) <= 0.001 and idx > 0:
+                space.remove(ind)
+                #print space
+
+        def matchEliminate(topgun, indi):
+
+            matched_fields = 0
+            for index, field in enumerate(indi, start=0):
+                if (topgun[index] == field):
+                    matched_fields = matched_fields + 1
+
+            return (matched_fields >= 13)
+
+        for idx, ind in enumerate(space):
+            if matchEliminate(topgun, ind):
+                space.remove(ind)
+
+
+        print "AFTER SPACE: "
+        for idx, i in enumerate(space):
+            print idx, i.fitness.values, i
+
+        space = tools.selBest(space, bestTopKnots)
+        for i in space:
+            topknots.append(i)
+
+    print "\n\n"
+    print "topknots individuals are: "
+    for i, j in enumerate(topknots):
+        if j.fitness.values[0] > 0.0:
+            print "%9s" % j[14][0:16], "%3d" % i, "fv: %.14f" % j.fitness.values, j
+
+
+# END TopKnots -------------------------------------------------------------------------------
 
     print "We ran", round_gen, "rounds"
 
@@ -678,10 +738,10 @@ def main():
     rulesFile = open('rules.rcd', 'w+')
     for item in topknots:
         line = ""
-        if item.fitness.values[0] > 0.0:
+        if item.fitness.values[0] > 0.6:
             for i in item:
                 line = line.__add__(str(i) + ' ')
-            print line
+            #print line
 
         #for i, j in enumerate(item):
         #    line.__add__(str(j) + ' ')

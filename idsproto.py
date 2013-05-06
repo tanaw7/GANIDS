@@ -48,7 +48,21 @@ start_time = time()
 #fileName = 'w7_tcpdump.list'
 #fileName = 'mixed_pod_test.list'
 #fileName = 'pscan.list'
-fileName = 'bsm.list'
+#fileName = 'bsm.list'
+
+#for pod training
+#fileName = 'w1_thu.list'
+fileName = 'w4_mon.list'
+#fileName = 'w4_tue.list'
+#fileName = 'w4_wed.list'
+#fileName = 'w5_tue.list'
+#fileName = 'w5_thu.list'
+#fileName = 'w6_tue.list'
+#fileName = 'w6_thu.list'
+#fileName = 'w7_tue.list'
+
+
+
 n_inds = 15 # Number of genes in each individual [shd not be modified]
 n_pop = 400 #400# Number of individuals in the whole population
 
@@ -57,13 +71,13 @@ if n_pop > 800:         # elites per attack type chosen for next gen
 else:
     elitesNo = n_pop/20#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.9, 1, 0.1, 200#400
+CXPB, enterMutation, MUTPB, NGEN = 0.8, 1, 0.2, 400#400
 
 wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
 wcw_switching = True
 wcw_a = 0.5
 wcw_b = 0.9
-wcw_swapGen = 10
+wcw_swapGen = 2
 
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
@@ -74,10 +88,10 @@ wildcard_allowance = 0 # 1 to 15 #currently not in used nor implemented yet
 Result_numbers = n_pop#800 #800 #30
 show_stats = True
 show_elites = True
-bestTopKnots = 2
+bestTopKnots = 10
 
 mutateElitesWildcards = True     #mutate elites genes when there are wildcards
-mutateElitesWildcards_PB = 1 #result: better fitness
+mutateElitesWildcards_PB = 0.9 #result: better fitness
                                #good combination when wildcardWeight is high
 
 baseWeaklings = n_pop/100 #with high wildcardWeight, it ensure the chance of finding
@@ -681,27 +695,35 @@ def main():
     
     for i in uniq_attack:
         space = []
+        jail = []
         #topgun = toolbox.empty_individual()
         for j in bestAttkTypes:
             if j[-1] == i:
                 space.append(j)
         #space.sort()
+        global topgun
         topgun = tools.selBest(space, 1)
-        topgun = topgun[0]
+        topgun = topgun[0] #THE BEST ONE of that attack type
 
         print "\n\nBEFORE SPACE: "
         for idx, i in enumerate(space):
             print idx, i.fitness.values, i
 
-        print "topgun of %s: " % topgun[-1], topgun
-        for idx, ind in enumerate(space):
-            print (topgun.fitness.values[0] - ind.fitness.values[0]) <= 0.001
-            print idx ,ind.fitness.values, ind
-            if (topgun.fitness.values[0] - ind.fitness.values[0]) <= 0.001 and idx > 0:
-                space.remove(ind)
-                #print space
+        #print "topgun of %s: " % topgun[-1], topgun
+        #for idx, ind in enumerate(space):            #it works now using jail[]
+        #    print idx ,ind.fitness.values, ind
+        #    print (topgun.fitness.values[0] - ind.fitness.values[0]) <= 0.001
+        #    if (((topgun.fitness.values[0] - ind.fitness.values[0]) <= 0.001) and (idx > 0)):
+        #        jail.append(ind)
+        #        print 1
 
-        def matchEliminate(topgun, indi):
+        #for ind in jail:
+        #    space.remove(ind)
+
+
+
+
+        def matchEliminate(topgun, indi): #move function to elsewhere later
 
             matched_fields = 0
             for index, field in enumerate(indi, start=0):
@@ -710,9 +732,14 @@ def main():
 
             return (matched_fields >= 13)
 
+
+        jail = []
         for idx, ind in enumerate(space):
-            if matchEliminate(topgun, ind):
-                space.remove(ind)
+            if matchEliminate(topgun, ind) and ind != topgun:
+                jail.append(ind)
+
+        for ind in jail:
+            space.remove(ind)
 
 
         print "AFTER SPACE: "
@@ -726,7 +753,7 @@ def main():
     print "\n\n"
     print "topknots individuals are: "
     for i, j in enumerate(topknots):
-        if j.fitness.values[0] > 0.0:
+        if j.fitness.values[0] > 0.7:
             print "%9s" % j[14][0:16], "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
 
@@ -734,11 +761,11 @@ def main():
 
     print "We ran", round_gen, "rounds"
 
-    #Write result to rules.rcd file
-    rulesFile = open('rules.rcd', 'w+')
+    #Write result to rulesDump.rcd file
+    rulesDumpFile = open('rulesDump.rcd', 'w+')
     for item in topknots:
         line = ""
-        if item.fitness.values[0] > 0.6:
+        if item.fitness.values[0] > 0.7:
             for i in item:
                 line = line.__add__(str(i) + ' ')
             #print line
@@ -746,8 +773,8 @@ def main():
         #for i, j in enumerate(item):
         #    line.__add__(str(j) + ' ')
         #    print line
-            rulesFile.write("%s\n" % line)
-    rulesFile.close()
+            rulesDumpFile.write("%s\n" % line)
+    rulesDumpFile.close()
 
 if __name__ == "__main__":
     main()

@@ -51,33 +51,40 @@ start_time = time()
 #fileName = 'bsm.list'
 
 #for pod training
-#fileName = 'w1_thu.list'
-fileName = 'w4_mon.list'
+#fileName = 'w1_thu.list' 
+#fileName = 'w4_mon.list'
 #fileName = 'w4_tue.list'
-#fileName = 'w4_wed.list'
+#fileName = 'w4_wed.list' #done
 #fileName = 'w5_tue.list'
-#fileName = 'w5_thu.list'
+#fileName = 'w5_thu.list' #uptil
 #fileName = 'w6_tue.list'
 #fileName = 'w6_thu.list'
 #fileName = 'w7_tue.list'
 
+#fileName = 'w5thupod.list'
 
+#for guest training
+#fileName = 'w2_mon.list'
+
+#for nmap training
+fileName = 'w3_wed.list'
+#fileName = 'w3_fri.list'
 
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 400 #400# Number of individuals in the whole population
+n_pop = 2000 #400# Number of individuals in the whole population
 
 if n_pop > 800:         # elites per attack type chosen for next gen
-    elitesNo = n_pop/20#n_pop/100#10
+    elitesNo = n_pop/10#n_pop/100#10
 else:
-    elitesNo = n_pop/20#n_pop/100 
+    elitesNo = n_pop/10#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.8, 1, 0.2, 400#400
+CXPB, enterMutation, MUTPB, NGEN = 0.5, 1, 0.2, 600#400
 
 wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
 wcw_switching = True
-wcw_a = 0.5
+wcw_a = 0.9
 wcw_b = 0.9
-wcw_swapGen = 2
+wcw_swapGen = 20
 
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
@@ -89,6 +96,11 @@ Result_numbers = n_pop#800 #800 #30
 show_stats = True
 show_elites = True
 bestTopKnots = 10
+
+fitnessDiff_opt = False
+fitnessDiff_value = 0.001
+matchEliminate_opt = False
+matchEliminate_AllowFields = 12 # in TopKnots filter
 
 mutateElitesWildcards = True     #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 0.9 #result: better fitness
@@ -337,8 +349,8 @@ def evalSupCon(individual):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
 
-    #if wildcard == 0 and fitness > 0:
-    #    fitness = fitness - 0.01
+    if wildcard == 0 and fitness > 0:
+        fitness = fitness - 0.01
     return fitness,
     #return [(fitness,), A, AnB]
 
@@ -442,6 +454,16 @@ def mutateWcardGene_rand(individaul):
         del mutant.fitness.values
     #print mutant
     return mutant
+
+def matchEliminate(ace, indi): #move function to elsewhere later
+
+    matched_fields = 0
+    for index, field in enumerate(indi, start=0):
+        if (ace[index] == field):
+            matched_fields = matched_fields + 1
+
+    return (matched_fields >= matchEliminate_AllowFields)
+
 #---------------------------------------------------------------
 
 # Operator registering
@@ -550,6 +572,49 @@ def main():
         #del mutant.fitness.values
 
     #-- VIII -- Optimizers --------------------------------------------------------
+
+            supremes = []
+            
+            for i in uniq_attack:
+                space = []
+                jail = []
+                #topgun = toolbox.empty_individual()
+                for j in elites:
+                    if j[-1] == i:
+                        space.append(j)
+                #space.sort()
+                global ace
+                ace = tools.selBest(space, 1)
+                ace = ace[0] #THE BEST ONE of that attack type
+
+                if fitnessDiff_opt == True:
+
+                    for idx, ind in enumerate(space):            #it works now using jail[]
+                    #    print idx ,ind.fitness.values, ind
+                    #    print (ace.fitness.values[0] - ind.fitness.values[0]) <= fitnessDiff_value
+                        if (((ace.fitness.values[0] - ind.fitness.values[0]) <= fitnessDiff_value) and (idx > 0)):
+                            jail.append(ind)
+                    #        print 1
+
+                    for ind in jail:
+                        space.remove(ind)
+
+
+                if matchEliminate_opt == True:
+                    jail = []
+                    for idx, ind in enumerate(space):
+                        if matchEliminate(ace, ind) and ind != ace:
+                            jail.append(ind)
+
+                    for ind in jail:
+                        space.remove(ind)
+
+                #space = tools.selBest(space, bestTopKnots)
+                for i in space:
+                    supremes.append(i)
+
+            elites = supremes
+#--------
 
         #    print "###", len(offspring)
             for i in elites:
@@ -688,7 +753,8 @@ def main():
             print "%9s" % j[14][0:16], "%3d" % i, "fv: %.14f" % j.fitness.values, j
             #print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
-
+    topknots = bestAttkTypes #comment if topknot filter is used.
+    """
 # TOPKNOTS Filter -------------------------------------------------------------------
     #uniq_attack
     topknots = []
@@ -730,7 +796,7 @@ def main():
                 if (topgun[index] == field):
                     matched_fields = matched_fields + 1
 
-            return (matched_fields >= 13)
+            return (matched_fields >= matchEliminate_AllowFields)
 
 
         jail = []
@@ -749,14 +815,14 @@ def main():
         space = tools.selBest(space, bestTopKnots)
         for i in space:
             topknots.append(i)
-
+        """
     print "\n\n"
     print "topknots individuals are: "
     for i, j in enumerate(topknots):
         if j.fitness.values[0] > 0.7:
             print "%9s" % j[14][0:16], "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
-
+ 
 # END TopKnots -------------------------------------------------------------------------------
 
     print "We ran", round_gen, "rounds"

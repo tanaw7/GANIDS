@@ -16,9 +16,14 @@ start_time = time()
 #--CONTROL PANEL---------------------------------------
 #------Modifiable variables (notable ones)----------------
 
-fileRules = 'rules.rcd'
+#fileRules = 'rules.rcd'
+fileRules = 'rules_pod.rcd'
+
 #fileTest = 'test_w1mon.list'
-fileTest = 'w2_alltruth.list'
+#fileTest = 'w1_alltruth.list'
+#fileTest = 'w2_alltruth.list'
+fileTest = 'wm_alltruth.list'
+#fileTest = 'test_pod207.list'
 #------------------------------------------------------
 
 auditData = []
@@ -136,9 +141,9 @@ def testMatch(rule):
         print "-@ rule %s -@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@" % rule_no
         print rule
         
-        print "Matched Connections below: "
-        for i in match_list:
-            print i
+        #print "Matched Connections below: "
+        #for i in match_list:
+        #    print i
         print "Matched Connections No:", matchConn
     
     return "haha"

@@ -48,7 +48,7 @@ start_time = time()
 #fileName = 'w7_tcpdump.list'
 #fileName = 'mixed_pod_test.list'
 #fileName = 'pscan.list'
-#fileName = 'bsm.list'
+fileName = 'bsm.list'
 
 #for pod training
 #fileName = 'w1_thu.list' 
@@ -61,13 +61,8 @@ start_time = time()
 #fileName = 'w6_thu.list'
 #fileName = 'w7_tue.list'
 
-#fileName = 'w5thupod.list'
-
-#for guest training
-#fileName = 'w2_mon.list'
-
 #for nmap training
-fileName = 'w3_wed.list'
+#fileName = 'w3_wed.list'
 #fileName = 'w3_fri.list'
 
 n_inds = 15 # Number of genes in each individual [shd not be modified]
@@ -78,10 +73,10 @@ if n_pop > 800:         # elites per attack type chosen for next gen
 else:
     elitesNo = n_pop/10#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.5, 1, 0.2, 600#400
+CXPB, enterMutation, MUTPB, NGEN = 0.8, 1, 0.9, 600#400
 
-wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
-wcw_switching = True
+wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
+wcw_switching = False
 wcw_a = 0.9
 wcw_b = 0.9
 wcw_swapGen = 20
@@ -97,13 +92,14 @@ show_stats = True
 show_elites = True
 bestTopKnots = 10
 
+#--Eliminator functions options
 fitnessDiff_opt = False
 fitnessDiff_value = 0.001
 matchEliminate_opt = False
 matchEliminate_AllowFields = 12 # in TopKnots filter
 
 mutateElitesWildcards = True     #mutate elites genes when there are wildcards
-mutateElitesWildcards_PB = 0.9 #result: better fitness
+mutateElitesWildcards_PB = 0.0001 #result: better fitness
                                #good combination when wildcardWeight is high
 
 baseWeaklings = n_pop/100 #with high wildcardWeight, it ensure the chance of finding
@@ -349,8 +345,8 @@ def evalSupCon(individual):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
 
-    if wildcard == 0 and fitness > 0:
-        fitness = fitness - 0.01
+    #if wildcard == 0 and fitness > 0:
+    #    fitness = fitness - 0.01
     return fitness,
     #return [(fitness,), A, AnB]
 
@@ -753,8 +749,8 @@ def main():
             print "%9s" % j[14][0:16], "%3d" % i, "fv: %.14f" % j.fitness.values, j
             #print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
-    topknots = bestAttkTypes #comment if topknot filter is used.
-    """
+    #topknots = bestAttkTypes #comment if topknot filter is used.
+    
 # TOPKNOTS Filter -------------------------------------------------------------------
     #uniq_attack
     topknots = []
@@ -762,7 +758,6 @@ def main():
     for i in uniq_attack:
         space = []
         jail = []
-        #topgun = toolbox.empty_individual()
         for j in bestAttkTypes:
             if j[-1] == i:
                 space.append(j)
@@ -771,9 +766,9 @@ def main():
         topgun = tools.selBest(space, 1)
         topgun = topgun[0] #THE BEST ONE of that attack type
 
-        print "\n\nBEFORE SPACE: "
-        for idx, i in enumerate(space):
-            print idx, i.fitness.values, i
+        #print "\n\nBEFORE SPACE: "
+        #for idx, i in enumerate(space):
+        #    print idx, i.fitness.values, i
 
         #print "topgun of %s: " % topgun[-1], topgun
         #for idx, ind in enumerate(space):            #it works now using jail[]
@@ -787,35 +782,23 @@ def main():
         #    space.remove(ind)
 
 
+        #jail = []
+        #for idx, ind in enumerate(space):
+        #    if matchEliminate(topgun, ind) and ind != topgun:
+        #        jail.append(ind)
+
+        #for ind in jail:
+        #    space.remove(ind)
 
 
-        def matchEliminate(topgun, indi): #move function to elsewhere later
-
-            matched_fields = 0
-            for index, field in enumerate(indi, start=0):
-                if (topgun[index] == field):
-                    matched_fields = matched_fields + 1
-
-            return (matched_fields >= matchEliminate_AllowFields)
-
-
-        jail = []
-        for idx, ind in enumerate(space):
-            if matchEliminate(topgun, ind) and ind != topgun:
-                jail.append(ind)
-
-        for ind in jail:
-            space.remove(ind)
-
-
-        print "AFTER SPACE: "
-        for idx, i in enumerate(space):
-            print idx, i.fitness.values, i
+        #print "AFTER SPACE: "
+        #for idx, i in enumerate(space):
+        #    print idx, i.fitness.values, i
 
         space = tools.selBest(space, bestTopKnots)
         for i in space:
             topknots.append(i)
-        """
+        
     print "\n\n"
     print "topknots individuals are: "
     for i, j in enumerate(topknots):

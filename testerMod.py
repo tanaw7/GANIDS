@@ -17,12 +17,13 @@ start_time = time()
 #------Modifiable variables (notable ones)----------------
 
 #fileRules = 'rules.rcd'
+#fileRules = 'rules_podfrTest.rcd'
 fileRules = 'rules_pod.rcd'
 
 #fileTest = 'test_w1mon.list'
-#fileTest = 'w1_alltruth.list'
+fileTest = 'w1_alltruth.list'
 #fileTest = 'w2_alltruth.list'
-fileTest = 'wm_alltruth.list'
+#fileTest = 'wm_alltruth.list'
 #fileTest = 'test_pod207.list'
 #------------------------------------------------------
 
@@ -30,19 +31,19 @@ auditData = []
 rules = []
 
 # I ---Read Rules Files-------------------------------------
-for line in fileinput.input([fileRules]):
+for i, line in enumerate(fileinput.input([fileRules])):
     line = line.rstrip('\r\n') # strip off the newline of each record
     if len(line) > 0:
         line = re.sub(' +', ' ', line)
         array = line.split(" ") # returns a list containing each item in the record
         del array[-1]
         for idx, item in enumerate(array):
-            if idx != 3 and idx != 14 or item == '-1':
+            if idx != 4 and idx != 15 or item == '-1':
                 array[idx] = int(item) 
         rules.append(array)
 
-#for i in rules:
-#    print i
+for i in rules:
+    print i
 # END I -----------------------------------------------------
 
 
@@ -57,6 +58,9 @@ for line in fileinput.input([fileTest]):
         array = line.split(" ")
 
         line = []
+        #---identifier
+        line.append(int(array[0])+1)
+
         #---Duration
         line.append(int(array[3][0:2])) #append hour as gene into chromosome
         line.append(int(array[3][3:5])) #append minute
@@ -118,11 +122,12 @@ def testMatch(rule):
     for record in auditData:
         matched_fields = 0
         for index, field in enumerate(record, start=0):
-            if (rule[index] == field) or (rule[index] == -1):
+            if ((rule[index] == field) or (rule[index] == -1)) and index != 0:
                 matched_fields = matched_fields + 1
+                #print matched_fields
             #if (rule[index] == -1): #may not need
             #    wildcard += 1
-            if index == 13 and matched_fields == 14: 
+            if index == 14 and matched_fields == 14: 
                 matchConn += 1
                 match_cc += 1
                 #print "Matched Connection"
@@ -141,9 +146,9 @@ def testMatch(rule):
         print "-@ rule %s -@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@" % rule_no
         print rule
         
-        #print "Matched Connections below: "
-        #for i in match_list:
-        #    print i
+        print "Matched Connections below: "
+        for i in match_list:
+            print i
         print "Matched Connections No:", matchConn
     
     return "haha"

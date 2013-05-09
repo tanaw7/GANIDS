@@ -61,23 +61,25 @@ fileName = 'bsm.list'
 #fileName = 'w6_thu.list'
 #fileName = 'w7_tue.list'
 
+#fileName = 'test_allpod.list'
+
 #for nmap training
 #fileName = 'w3_wed.list'
 #fileName = 'w3_fri.list'
 
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 2000 #400# Number of individuals in the whole population
+n_pop = 200 #400# Number of individuals in the whole population
 
 if n_pop > 800:         # elites per attack type chosen for next gen
     elitesNo = n_pop/10#n_pop/100#10
 else:
     elitesNo = n_pop/10#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.8, 1, 0.9, 600#400
+CXPB, enterMutation, MUTPB, NGEN = 0.8, 1, 0.1, 400#400
 
-wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
 wcw_switching = False
-wcw_a = 0.9
+wcw_a = 0.4
 wcw_b = 0.9
 wcw_swapGen = 20
 
@@ -93,13 +95,13 @@ show_elites = True
 bestTopKnots = 10
 
 #--Eliminator functions options
-fitnessDiff_opt = False
+fitnessDiff_opt = True
 fitnessDiff_value = 0.001
 matchEliminate_opt = False
 matchEliminate_AllowFields = 12 # in TopKnots filter
 
 mutateElitesWildcards = True     #mutate elites genes when there are wildcards
-mutateElitesWildcards_PB = 0.0001 #result: better fitness
+mutateElitesWildcards_PB = 1 #result: better fitness
                                #good combination when wildcardWeight is high
 
 baseWeaklings = n_pop/100 #with high wildcardWeight, it ensure the chance of finding
@@ -811,18 +813,19 @@ def main():
     print "We ran", round_gen, "rounds"
 
     #Write result to rulesDump.rcd file
+    rules = []
     rulesDumpFile = open('rulesDump.rcd', 'w+')
     for item in topknots:
         line = ""
         if item.fitness.values[0] > 0.7:
             for i in item:
                 line = line.__add__(str(i) + ' ')
-            #print line
+            
+            rules.append(line)
 
-        #for i, j in enumerate(item):
-        #    line.__add__(str(j) + ' ')
-        #    print line
-            rulesDumpFile.write("%s\n" % line)
+    for idx, item in enumerate(rules):
+        item = str(idx+1) + " " + item
+        rulesDumpFile.write("%s\n" % item)
     rulesDumpFile.close()
 
 if __name__ == "__main__":

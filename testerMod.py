@@ -21,10 +21,20 @@ start_time = time()
 fileRules = 'rules_pod.rcd'
 
 #fileTest = 'test_w1mon.list'
-fileTest = 'w1_alltruth.list'
+#fileTest = 'w1_alltruth.list'
 #fileTest = 'w2_alltruth.list'
-#fileTest = 'wm_alltruth.list'
+fileTest = 'test_w1_mon_truth.list' #pod
+#fileTest = 'test_w1_tue_truth.list'
+#fileTest = 'test_w1_wed_truth.list'
+#fileTest = 'test_w1_thu_truth.list' #pod
+#fileTest = 'test_w1_fri_truth.list'
+
 #fileTest = 'test_pod207.list'
+
+attackType = 'pod'
+attackType_strLength = len(attackType)
+
+pods = 0.0
 #------------------------------------------------------
 
 auditData = []
@@ -59,7 +69,7 @@ for line in fileinput.input([fileTest]):
 
         line = []
         #---identifier
-        line.append(int(array[0])+1)
+        line.append(int(array[0]))
 
         #---Duration
         line.append(int(array[3][0:2])) #append hour as gene into chromosome
@@ -91,6 +101,8 @@ for line in fileinput.input([fileTest]):
         line.append(int(ip[3])) #4th octet
         #---Attack type
         line.append(array[10])
+        if array[10][0:attackType_strLength] == attackType:
+            pods += 1
 
     auditData.append(line)
 
@@ -102,10 +114,11 @@ for line in fileinput.input([fileTest]):
 
 # III -----------------------Match function----------------------------
 
+
 match_cc = 0
 match_at = 0
 rule_no = 0
-def testMatch(rule):
+def testMatchRule(rule): #input is a rule
     global match_cc
     global match_at
     global rule_no
@@ -119,6 +132,7 @@ def testMatch(rule):
     matchAttk = 0
     match_list = []
 
+    #for record in auditData:
     for record in auditData:
         matched_fields = 0
         for index, field in enumerate(record, start=0):
@@ -153,14 +167,110 @@ def testMatch(rule):
     
     return "haha"
 
+alerts = []
+
+def testMatchData(dataRecord): #input is a test data record
+    global match_cc
+    global match_at
+    global rule_no
+
+    rule_no += 1
+
+    #Nconnect = float(len(auditData))
+    matched_lines = 0
+    matchRules = 0
+    match_list = []
+
+    #for record in auditData:
+    for record in rules:
+        matched_fields = 0
+        for index, field in enumerate(record, start=0):
+            if ((dataRecord[index] == field) or (record[index] == -1)) and index != 0:
+                matched_fields = matched_fields + 1
+                #print matched_fields
+            #if (rule[index] == -1): #may not need
+            #    wildcard += 1
+            if index == 14 and matched_fields == 14: 
+                matchRules += 1
+                match_cc += 1
+                #print "Matched Rules"
+                #print match_cc
+                match_list.append(record)
+
+    if len(match_list) > 0:
+
+        alerts.append(dataRecord)
+
+        print "\n"
+        print "-@ Test Data No. %s -@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@" % rule_no
+        print dataRecord #[-1][0:3]
+        
+        print "Matched Rules below: "
+        for i in match_list:
+            print i
+        print "Matched Rules No:", matchRules
+    
+    return "haha"
+
 # END III ----------------------------------------------------------------------------
 
 #print len(rules)
 #print len(auditData)
 
-for i, j in enumerate(rules):
+#for i, j in enumerate(rules):
     #print "rule No.:", i 
-    testMatch(j)
+#    testMatchRule(j)
 
+for i, j in enumerate(auditData):
+    #print "rule No.:", i 
+    testMatchData(j)
+
+falseAlert = 0
+
+print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+print "\nConnections flagged by false alerts: "
+for i in alerts:
+    if i[-1][0:attackType_strLength] != attackType:
+        print i
+        falseAlert += 1
+
+#attkInTestFile = 1340
+attkInTestFile = pods
+
+if attkInTestFile > 0:
+
+    alerts_all = float(len(alerts))
+    alerts_false = float(falseAlert)
+    alerts_true = float(alerts_all - alerts_false)
+    false_neg = (attkInTestFile - alerts_true)
+
+    print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+    print "Summary of the simulation: \n"
+    print "Test Data records: %s\n" % len(auditData)
+    print "\nNo of Attacks in Test Records: %s" % attkInTestFile
+    print "All alerts: %s" % alerts_all
+    print "False Positive/False Alerts: %s, %.4f%%" % (alerts_false, float(alerts_false/alerts_all)*100)
+    print "False Negative/Undetected Attacks: %s, %.4f%% " % ( false_neg, float(false_neg/attkInTestFile)*100 )
+    print "\nTrue Positive/Detected Attacks: %s, %.4f%%\n\n" % (alerts_true, float(alerts_true/attkInTestFile)*100)
+
+else:
+
+    alerts_all = float(len(alerts))
+    alerts_false = float(falseAlert)
+    alerts_true = float(alerts_all - alerts_false)
+    false_neg = (attkInTestFile - alerts_true)    
+
+    print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+    print "Summary of the simulation: \n"
+    print "There is no %s attack in this test file" % attackType
+    print "Test Data records: %s\n" % len(auditData)
+    print "\nNo of Attacks in Test Records: %s" % attkInTestFile
+    print "All alerts: %s" % alerts_all
+    if alerts_all > 0:
+        print "False Positive/False Alerts: %s, %.4f%%" % (alerts_false, float(alerts_false/alerts_all)*100)
+    else:
+        print "False Positive/False Alerts: %s, %.4f%%" % (0, 0)
+    print "\nFalse Negative/Undetected Attacks: %s, %.4f%% " % (0, 0)
+    print "True Positive/Detected Attacks: %s, %.4f%%\n\n" % (0, 0)
 
 

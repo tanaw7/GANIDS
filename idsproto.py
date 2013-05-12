@@ -68,14 +68,14 @@ fileName = 'bsm.list'
 #fileName = 'w3_fri.list'
 
 n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 200 #400# Number of individuals in the whole population
+n_pop = 4000 #400# Number of individuals in the whole population
 
 if n_pop > 800:         # elites per attack type chosen for next gen
     elitesNo = n_pop/10#n_pop/100#10
 else:
     elitesNo = n_pop/10#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.8, 1, 0.1, 400#400
+CXPB, enterMutation, MUTPB, NGEN = 0.8, 1, 0.1, 200#400
 
 wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
 wcw_switching = False
@@ -347,8 +347,8 @@ def evalSupCon(individual):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
 
-    #if wildcard == 0 and fitness > 0:
-    #    fitness = fitness - 0.01
+    if wildcard == 0 and fitness > 0:
+        fitness = fitness - 0.001
     return fitness,
     #return [(fitness,), A, AnB]
 

@@ -1,6 +1,3 @@
--@ rule 12 -@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@
-[12, 0, 0, 1, 'frag/i', -1, -1, -1, -1, -1, -1, 172, 16, -1, -1, 'pod']
-Matched Connections below: 
 [32761, 0, 0, 1, 'frag/i', 0, 0, 207, 103, 80, 104, 172, 16, 114, 50, 'pod,3,*,y,dos,clear,old,script']
 [32762, 0, 0, 1, 'frag/i', 0, 0, 207, 103, 80, 104, 172, 16, 114, 50, 'pod,3,*,y,dos,clear,old,script']
 [32763, 0, 0, 1, 'frag/i', 0, 0, 207, 103, 80, 104, 172, 16, 114, 50, 'pod,3,*,y,dos,clear,old,script']
@@ -1311,4 +1308,3 @@ Matched Connections below:
 [15222, 0, 0, 1, 'frag/i', 0, 0, 152, 204, 242, 193, 172, 16, 118, 100, 'pod,25,*,y,dos,clear,old,script']
 [15223, 0, 0, 1, 'frag/i', 0, 0, 152, 204, 242, 193, 172, 16, 118, 100, 'pod,25,*,y,dos,clear,old,script']
 [15224, 0, 0, 1, 'frag/i', 0, 0, 152, 204, 242, 193, 172, 16, 118, 100, 'pod,25,*,y,dos,clear,old,script']
-Matched Connections No: 1310

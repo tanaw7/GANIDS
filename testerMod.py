@@ -22,8 +22,8 @@ fileRules = 'rules_pod.rcd'
 
 #fileTest = 'test_w1mon.list'
 #fileTest = 'w1_alltruth.list'
-#fileTest = 'w2_alltruth.list'
-fileTest = 'wm_alltruth.list'
+fileTest = 'w2_alltruth.list'
+#fileTest = 'wm_alltruth.list'
 #fileTest = 'test_w1_mon_truth.list' #pod
 #fileTest = 'test_w1_tue_truth.list'
 #fileTest = 'test_w1_wed_truth.list'
@@ -119,7 +119,7 @@ for line in fileinput.input([fileTest]):
 match_cc = 0
 match_at = 0
 rule_no = 0
-def testMatchRule(rule): #input is a rule
+def testMatchRule(rule): #input is a rule against data records
     global match_cc
     global match_at
     global rule_no
@@ -170,7 +170,7 @@ def testMatchRule(rule): #input is a rule
 
 alerts = []
 
-def testMatchData(dataRecord): #input is a test data record
+def testMatchData(dataRecord): #input is a test data record against rules
     global match_cc
     global match_at
     global rule_no

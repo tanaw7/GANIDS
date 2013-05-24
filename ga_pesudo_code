@@ -1,0 +1,29 @@
+Read Configuation file
+Load Audit Data
+Generate pools of unique values (alleles)
+
+Initialize Population
+Evaluate individuals' fitness
+
+WHILE N < NGEN
+	//Traditional GA
+	Initialize new empty offspring (population)
+	Select Elites
+	Select random individuals, copy them to offspring
+	Apply Crossover to the offspring
+	Apply Mutation to the offspring
+
+	//Optimizations
+	Apply Ace Comparison
+	Apply Mutation of Elites' wildcard genes
+	Eliminate weaklings
+	Regenerate new individuals
+	Reevaluate individuals' fitness
+
+	Assign offspring as the new population
+END WHILE
+
+Display result of best individuals
+Write best individuals as IDS rules to a file
+
+

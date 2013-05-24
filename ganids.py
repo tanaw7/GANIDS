@@ -1,24 +1,3 @@
-"""
-*  GANIDS (beta 0.9) - Genetic Algorithms for Deriving Network Intrusion Rules
-*
-*    Copyright (C) 2013 Tanapuch Wanwarang (Niklas) <nik.csec@gmail.com>
-*
-*                       http://nixorids.blogspot.com/
-*
-*    This program is free software: you can redistribute it and/or modify
-*    it under the terms of the GNU General Public License as published by
-*    the Free Software Foundation, either version 3 of the License, or
-*    (at your option) any later version.
-*
-*    This program is distributed in the hope that it will be useful,
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU General Public License for more details.
-*
-*    You should have received a copy of the GNU General Public License
-*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
-
 import random           #for most of the things done here
 import fileinput        #for reading an audit dataset
 import bisect           #for mapping different weights for members in a list
@@ -43,26 +22,44 @@ start_time = time()
 #fileName = 'w1_thu.list'
 #fileName = 'w1_fri.list'
 #fileName = 'mixed.list'
-#fileName = 'mixed_all.list' 
+fileName = 'mixed_all.list' 
 #fileName = 'tcpdump.list'
 #fileName = 'w7_tcpdump.list'
+#fileName = 'mixed_pod_test.list'
 #fileName = 'pscan.list'
-fileName = 'bsm.list'
-n_inds = 15 # Number of genes in each individual [shd not be modified]
-n_pop = 400 #400# Number of individuals in the whole population
+#fileName = 'bsm.list'
+
+#for pod training
+#fileName = 'w1_thu.list' 
+#fileName = 'w4_mon.list'
+#fileName = 'w4_tue.list'
+#fileName = 'w4_wed.list' #done
+#fileName = 'w5_tue.list'
+#fileName = 'w5_thu.list' #uptil
+#fileName = 'w6_tue.list'
+#fileName = 'w6_thu.list'
+#fileName = 'w7_tue.list'
+
+#fileName = 'test_allpod.list'
+
+#for nmap training
+#fileName = 'w3_wed.list'
+#fileName = 'w3_fri.list'
+
+n_pop = 4000 #400# Number of individuals in the whole population
 
 if n_pop > 800:         # elites per attack type chosen for next gen
-    elitesNo = n_pop/20#n_pop/100#10
+    elitesNo = n_pop/10#n_pop/100#10
 else:
-    elitesNo = n_pop/20#n_pop/100 
+    elitesNo = n_pop/10#n_pop/100 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.7, 1, 0.1, 400#400
+CXPB, enterMutation, MUTPB, NGEN = 0.8, 1, 0.1, 200#400
 
-wildcardWeight = 1#0.8#0.9 #chance that a gene initialized is a wildcard
+wildcardWeight = 0.1#0.8#0.9 #chance that a gene initialized is a wildcard
 wcw_switching = False
-wcw_a = 0.1
+wcw_a = 0.4
 wcw_b = 0.9
-wcw_swapGen = 2
+wcw_swapGen = 20
 
 weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
 
@@ -73,6 +70,13 @@ wildcard_allowance = 0 # 1 to 15 #currently not in used nor implemented yet
 Result_numbers = n_pop#800 #800 #30
 show_stats = True
 show_elites = True
+bestTopKnots = 10
+
+#--Eliminator functions options
+fitnessDiff_opt = False
+fitnessDiff_value = 0.001
+matchEliminate_opt = False
+matchEliminate_AllowFields = 12 # in TopKnots filter
 
 mutateElitesWildcards = True     #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 1 #result: better fitness
@@ -85,10 +89,10 @@ baseWeaklings = n_pop/100 #with high wildcardWeight, it ensure the chance of fin
 
 # I ------Read DARPA audit files---*done*try put this in individuals--
 auditData = []
-nosplit = []
+#nosplit = []
 for line in fileinput.input([fileName]):
     line = line.rstrip('\r\n') # strip off the newline of each record
-    nosplit.append(line)
+    #nosplit.append(line)
     if len(line) > 0:
         line = re.sub(' +', ' ', line)
         array = line.split(" ")
@@ -108,12 +112,12 @@ for line in fileinput.input([fileName]):
         if array[5] != '-':
             line.append(int(array[5]))
         else:
-            line.append(0)
+            line.append(-1)
         #---Destination Port
         if array[6] != '-':
             line.append(int(array[6]))
         else:
-            line.append(0)
+            line.append(-1)
         #---Source IP
         ip = array[7].split(".")
         line.append(int(ip[0])) #1st octet
@@ -175,7 +179,7 @@ for i in auditData:
     if i[14] != '-':
         uniq_attack.add(i[14])
 
-
+print uniq_attack
 
 uniq_hour = list(uniq_hour)
 uniq_minute = list(uniq_minute)
@@ -322,7 +326,7 @@ def evalSupCon(individual):
             fitness = fitness - wildcard_deduct
 
     #if wildcard == 0 and fitness > 0:
-    #    fitness = fitness - 0.01
+    #    fitness = fitness - 0.001
     return fitness,
     #return [(fitness,), A, AnB]
 
@@ -426,6 +430,16 @@ def mutateWcardGene_rand(individaul):
         del mutant.fitness.values
     #print mutant
     return mutant
+
+def matchEliminate(ace, indi): 
+
+    matched_fields = 0
+    for index, field in enumerate(indi, start=0):
+        if (ace[index] == field):
+            matched_fields = matched_fields + 1
+
+    return (matched_fields >= matchEliminate_AllowFields)
+
 #---------------------------------------------------------------
 
 # Operator registering
@@ -535,6 +549,49 @@ def main():
 
     #-- VIII -- Optimizers --------------------------------------------------------
 
+            supremes = []
+            
+            for i in uniq_attack:
+                space = []
+                jail = []
+                #topgun = toolbox.empty_individual()
+                for j in elites:
+                    if j[-1] == i:
+                        space.append(j)
+                #space.sort()
+                global ace
+                ace = tools.selBest(space, 1)
+                ace = ace[0] #THE BEST ONE of that attack type
+
+                if fitnessDiff_opt == True:
+
+                    for idx, ind in enumerate(space):            #it works now using jail[]
+                    #    print idx ,ind.fitness.values, ind
+                    #    print (ace.fitness.values[0] - ind.fitness.values[0]) <= fitnessDiff_value
+                        if (((ace.fitness.values[0] - ind.fitness.values[0]) <= fitnessDiff_value) and (idx > 0)):
+                            jail.append(ind)
+                    #        print 1
+
+                    for ind in jail:
+                        space.remove(ind)
+
+
+                if matchEliminate_opt == True:
+                    jail = []
+                    for idx, ind in enumerate(space):
+                        if matchEliminate(ace, ind) and ind != ace:
+                            jail.append(ind)
+
+                    for ind in jail:
+                        space.remove(ind)
+
+                #space = tools.selBest(space, bestTopKnots)
+                for i in space:
+                    supremes.append(i)
+
+            elites = supremes
+#--------
+
         #    print "###", len(offspring)
             for i in elites:
                 offspring.append(i)
@@ -600,7 +657,6 @@ def main():
                 sum2 = sum(x*x for x in fits)
                 std = abs(sum2 / length - mean**2)**0.5
                 #mx = float(max(fits))
-                #mxp = (mx*100) / n_inds
 
                 print(" individuals: %s" % len(pop))
                 print(" weaklings: %s" % len(weaklings))
@@ -656,22 +712,98 @@ def main():
 
     print "\n\n"
     #Remove duplicate individuals from the results
-    bestInds.sort()
+    #bestInds.sort()
     bestInds = tools.selBest(bestInds, len(bestInds))
     bestInds = list(bestInds for bestInds,_ in itertools.groupby(bestInds))
     print "Best individuals (duplications removed) are: "
     for i, j in enumerate(bestInds):
         print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
-    topknots = toolbox.selectE(bestInds)
+    #Show Best individuals by attack types
+    bestAttkTypes = toolbox.selectE(bestInds)
     print "\n\n"
     print "Best individuals by attack types are: "
-    for i, j in enumerate(topknots):
+    for i, j in enumerate(bestAttkTypes):
         if j.fitness.values[0] > 0.0:
             print "%9s" % j[14][0:16], "%3d" % i, "fv: %.14f" % j.fitness.values, j
             #print "%3d" % i, "fv: %.14f" % j.fitness.values, j
 
+    #topknots = bestAttkTypes #comment if topknot filter is used.
+    
+# TOPKNOTS Filter -------------------------------------------------------------------
+    #uniq_attack
+    topknots = []
+    
+    for i in uniq_attack:
+        space = []
+        jail = []
+        for j in bestAttkTypes:
+            if j[-1] == i:
+                space.append(j)
+        #space.sort()
+        global topgun
+        topgun = tools.selBest(space, 1)
+        topgun = topgun[0] #THE BEST ONE of that attack type
+
+        #print "\n\nBEFORE SPACE: "
+        #for idx, i in enumerate(space):
+        #    print idx, i.fitness.values, i
+
+        #print "topgun of %s: " % topgun[-1], topgun
+        #for idx, ind in enumerate(space):            #it works now using jail[]
+        #    print idx ,ind.fitness.values, ind
+        #    print (topgun.fitness.values[0] - ind.fitness.values[0]) <= 0.001
+        #    if (((topgun.fitness.values[0] - ind.fitness.values[0]) <= 0.001) and (idx > 0)):
+        #        jail.append(ind)
+        #        print 1
+
+        #for ind in jail:
+        #    space.remove(ind)
+
+
+        #jail = []
+        #for idx, ind in enumerate(space):
+        #    if matchEliminate(topgun, ind) and ind != topgun:
+        #        jail.append(ind)
+
+        #for ind in jail:
+        #    space.remove(ind)
+
+
+        #print "AFTER SPACE: "
+        #for idx, i in enumerate(space):
+        #    print idx, i.fitness.values, i
+
+        space = tools.selBest(space, bestTopKnots)
+        for i in space:
+            topknots.append(i)
+        
+    print "\n\n"
+    print "topknots individuals are: "
+    for i, j in enumerate(topknots):
+        if j.fitness.values[0] > 0.7:
+            print "%9s" % j[14][0:16], "%3d" % i, "fv: %.14f" % j.fitness.values, j
+
+ 
+# END TopKnots -------------------------------------------------------------------------------
+
     print "We ran", round_gen, "rounds"
+
+    #Write result to rulesDump.rcd file
+    rules = []
+    rulesDumpFile = open('rulesDump.rcd', 'w+')
+    for item in topknots:
+        line = ""
+        if item.fitness.values[0] > 0.7:
+            for i in item:
+                line = line.__add__(str(i) + ' ')
+            
+            rules.append(line)
+
+    for idx, item in enumerate(rules):
+        item = str(idx+1) + " " + item
+        rulesDumpFile.write("%s\n" % item)
+    rulesDumpFile.close()
 
 if __name__ == "__main__":
     main()

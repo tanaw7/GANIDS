@@ -23,7 +23,8 @@ fileRules = 'rules_pod.rcd'
 #fileTest = 'test_w1mon.list'
 #fileTest = 'w1_alltruth.list'
 #fileTest = 'w2_alltruth.list'
-fileTest = 'test_w1_mon_truth.list' #pod
+fileTest = 'wm_alltruth.list'
+#fileTest = 'test_w1_mon_truth.list' #pod
 #fileTest = 'test_w1_tue_truth.list'
 #fileTest = 'test_w1_wed_truth.list'
 #fileTest = 'test_w1_thu_truth.list' #pod
@@ -244,14 +245,17 @@ if attkInTestFile > 0:
     alerts_true = float(alerts_all - alerts_false)
     false_neg = (attkInTestFile - alerts_true)
 
+
     print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
     print "Summary of the simulation: \n"
     print "Test Data records: %s\n" % len(auditData)
-    print "\nNo of Attacks in Test Records: %s" % attkInTestFile
+    print "\nTotal Number of Attacks in Test Records: %s" % attkInTestFile
     print "All alerts: %s" % alerts_all
     print "False Positive/False Alerts: %s, %.4f%%" % (alerts_false, float(alerts_false/alerts_all)*100)
     print "False Negative/Undetected Attacks: %s, %.4f%% " % ( false_neg, float(false_neg/attkInTestFile)*100 )
     print "\nTrue Positive/Detected Attacks: %s, %.4f%%\n\n" % (alerts_true, float(alerts_true/attkInTestFile)*100)
+
+
 
 else:
 
@@ -264,7 +268,7 @@ else:
     print "Summary of the simulation: \n"
     print "There is no %s attack in this test file" % attackType
     print "Test Data records: %s\n" % len(auditData)
-    print "\nNo of Attacks in Test Records: %s" % attkInTestFile
+    print "\nTotal Number of Attacks in Test Records: %s" % attkInTestFile
     print "All alerts: %s" % alerts_all
     if alerts_all > 0:
         print "False Positive/False Alerts: %s, %.4f%%" % (alerts_false, float(alerts_false/alerts_all)*100)

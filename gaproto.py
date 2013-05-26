@@ -4,18 +4,13 @@ from gafunc import *
 def main():
     #random.seed(12) #uncommet this for testing
     pop = toolbox.population(n=n_pop) #CREATE POPULATION
-    #for i in pop: #prints initial population
-    # print pop.index(i)+1, i
-    
+
     print("Start of evolution")
     
     # Evaluate the entire population
     fitnesses = list(map(toolbox.evaluate, pop)) #THIS LINE MUST BE UNDERSTOOD
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
-
-    #for i in pop:
-    #    print i.fitness.values,
 
     print " "
     print(" Evaluated %i individuals" % len(pop))
@@ -33,8 +28,6 @@ def main():
                     wildcardWeight = wcw_b
                 else:
                     wildcardWeight = wcw_a
-            
-            #print wildcardWeight
 
             # Initialize new population
             offspring = []
@@ -42,7 +35,7 @@ def main():
             # Select the next generation individuals
             elites = toolbox.selectE(pop) # select elites for next gen
 
-            offspring = toolbox.select(pop, len(pop)/sel_divisor)#len(pop))
+            offspring = toolbox.select(pop, int(len(pop)/sel_divisor))#len(pop))
             #print "LEN OFFFFF", len(offspring)
             # Clone the selected individuals
             offspring = list(map(toolbox.clone, offspring))
@@ -50,7 +43,6 @@ def main():
             # Apply crossover on the offspring individuals
             # first we shuffle list members positions.
             # Then we mate every two members next to one another
-            random.shuffle(offspring)
             random.shuffle(offspring) 
             for child1, child2 in zip(offspring[::2], offspring[1::2]):
                 if random.random() < CXPB:
@@ -61,69 +53,31 @@ def main():
             # Apply mutation on the offsping individuals
             for idx, individual in enumerate(offspring):
                 if random.random() < enterMutation: # no need bcuz MUTPB in def
-                    mutor = toolbox.clone(individual)
-                    mutor = toolbox.mutate(individual)
+                    mutor = toolbox.clone(individual) #variable initilization
+                    mutor = toolbox.mutate(mutor)
                     #print "##MUT##", mutor
                     del mutor.fitness.values
                     offspring[idx] = mutor
 
+            #invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+            #fitnesses = map(toolbox.evaluate, invalid_ind)
+
     #-- VIII -- Optimizers --------------------------------------------------------
 
-            supremes = []
+
             
-            for i in uniq_attack:
-                space = []
-                jail = []
-                #topgun = toolbox.empty_individual()
-                for j in elites:
-                    if j[-1] == i:
-                        space.append(j)
-                #space.sort()
-                global ace
-                ace = tools.selBest(space, 1)
-                ace = ace[0] #THE BEST ONE of that attack type
+            #-- Ace Comparison
+            elites = aceComparison(elites)
 
-                if fitnessDiff_opt == True:
-
-                    for idx, ind in enumerate(space):            #it works now using jail[]
-                    #    print idx ,ind.fitness.values, ind
-                    #    print (ace.fitness.values[0] - ind.fitness.values[0]) <= fitnessDiff_value
-                        if (((ace.fitness.values[0] - ind.fitness.values[0]) <= fitnessDiff_value) and (idx > 0)):
-                            jail.append(ind)
-                    #        print 1
-
-                    for ind in jail:
-                        space.remove(ind)
-
-
-                if matchEliminate_opt == True:
-                    jail = []
-                    for idx, ind in enumerate(space):
-                        if matchEliminate(ace, ind) and ind != ace:
-                            jail.append(ind)
-
-                    for ind in jail:
-                        space.remove(ind)
-
-                #space = tools.selBest(space, bestTopKnots)
-                for i in space:
-                    supremes.append(i)
-
-            elites = supremes
-#--------
-
-        #    print "###", len(offspring)
             for i in elites:
                 offspring.append(i)
 
             mutatedElites = 0
-
             if mutateElitesWildcards == True:
                 
-                for i in elites:
-                    #print i
-                    mutant = mutateWcardGene_rand(i)
-                    if mutant != i:
+                for ind in elites:
+                    mutant = mutateWcardGene_rand(ind)
+                    if mutant != ind:
                         mutatedElites += 1
                         #print mutant
                         offspring.append(mutant)

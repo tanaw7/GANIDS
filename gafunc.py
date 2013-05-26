@@ -340,7 +340,7 @@ def mutateWcardGene(individaul): #use to mutate wildcard genes of elites
 
 def mutateWcardGene_rand(individaul):
     mutant = toolbox.clone(individaul)
-    wcard_field = []
+    wcard_field = [] # get the positions of the wildcard genes
     for i, field in enumerate(mutant):
         unique_types = uniq_all
         if (field == -1):
@@ -361,6 +361,40 @@ def matchEliminate(ace, indi):
             matched_fields = matched_fields + 1
 
     return (matched_fields >= matchEliminate_AllowFields)
+
+def aceComparison(elites):
+    supremes = []
+
+    for i in uniq_attack:
+        space = []
+        jail = []
+        for j in elites:
+            if j[-1] == i:
+                space.append(j)
+        global ace
+        ace = tools.selBest(space, 1)
+        ace = ace[0]
+
+        if fitnessDiff_opt == True:
+            for idx, ind in enumerate(space):
+                if (((ace.fitness.values[0] - ind.fitness.values[0]) <= fitnessDiff_value) and (idx > 0)):
+                    jail.append(ind)
+            for ind in jail:
+                space.remove(ind)
+
+        if matchEliminate_opt == True:
+            jail = []
+            for idx, ind in enumerate(space):
+                if matchEliminate(ace, ind) and ind != ace:
+                    jail.append(ind)
+            for ind in jail:
+                space.remove(ind)
+
+        for i in space:
+            supremes.append(i)
+
+    return supremes
+
 
 #---------------------------------------------------------------
 

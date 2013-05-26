@@ -11,7 +11,7 @@ else:
 sel_divisor = 4/3.0 # dividing factor for selection operator
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.8, 1, 0.1, 200#400
+CXPB, enterMutation, MUTPB, NGEN = 0.8, 0.4, 0.25, 200#400
 
 wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
 wcw_switching = False
@@ -34,7 +34,7 @@ bestTopKnots = 10
 fitnessDiff_opt = True
 fitnessDiff_value = 0.001
 matchEliminate_opt = False
-matchEliminate_AllowFields = 12 # in TopKnots filter
+matchEliminate_AllowFields = 8 # in TopKnots filter
 
 mutateElitesWildcards = True     #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 1 #result: better fitness

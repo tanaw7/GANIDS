@@ -1,0 +1,7 @@
+Take an elite individual as input
+Identify any genetic locus containing a wildcard value of that elite
+Randomly select a locus from the identified ones
+Generate a type double random value between 0.00 to 1.00, store it as Rand
+IF (Rand < The probability of mutation)
+	Replace that locus genetic value with a random value from the locus' allele
+Add the mutated individual into the offspring population

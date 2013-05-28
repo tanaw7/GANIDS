@@ -22,8 +22,8 @@ fileRules = 'rules_pod.rcd'
 
 #fileTest = 'test_w1mon.list'
 #fileTest = 'w1_alltruth.list'
-fileTest = 'w2_alltruth.list'
-#fileTest = 'wm_alltruth.list'
+#fileTest = 'w2_alltruth.list'
+fileTest = 'wm_alltruth.list'
 #fileTest = 'test_w1_mon_truth.list' #pod
 #fileTest = 'test_w1_tue_truth.list'
 #fileTest = 'test_w1_wed_truth.list'
@@ -35,7 +35,7 @@ fileTest = 'w2_alltruth.list'
 attackType = 'pod'
 attackType_strLength = len(attackType)
 
-pods = 0.0
+attkInTestFile = 0.0
 #------------------------------------------------------
 
 auditData = []
@@ -103,7 +103,7 @@ for line in fileinput.input([fileTest]):
         #---Attack type
         line.append(array[10])
         if array[10][0:attackType_strLength] == attackType:
-            pods += 1
+            attkInTestFile += 1
 
     auditData.append(line)
 
@@ -227,6 +227,7 @@ for i, j in enumerate(auditData):
     testMatchData(j)
 
 falseAlert = 0
+normalConnWrongIden = 0
 
 print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
 print "\nConnections flagged by false alerts: "
@@ -235,25 +236,33 @@ for i in alerts:
         print i
         falseAlert += 1
 
-#attkInTestFile = 1340
-attkInTestFile = pods
+print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+print "\nNormal Connections wrongly identified as attacks: "
+for i in alerts:
+    if i[-1] == '-':
+        print i
+        normalConnWrongIden += 1
+
 
 if attkInTestFile > 0:
 
+    testDataNo = len(auditData)
+    normalConns = float(testDataNo - attkInTestFile)
     alerts_all = float(len(alerts))
     alerts_false = float(falseAlert)
     alerts_true = float(alerts_all - alerts_false)
-    false_neg = (attkInTestFile - alerts_true)
-
+    false_neg = float(attkInTestFile - alerts_true)
+    true_neg = float(normalConns - normalConnWrongIden)
 
     print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
     print "Summary of the simulation: \n"
-    print "Test Data records: %s\n" % len(auditData)
+    print "Test Data records: %s\n" % testDataNo
     print "\nTotal Number of Attacks in Test Records: %s" % attkInTestFile
     print "All alerts: %s" % alerts_all
-    print "False Positive/False Alerts: %s, %.4f%%" % (alerts_false, float(alerts_false/alerts_all)*100)
-    print "False Negative/Undetected Attacks: %s, %.4f%% " % ( false_neg, float(false_neg/attkInTestFile)*100 )
-    print "\nTrue Positive/Detected Attacks: %s, %.4f%%\n\n" % (alerts_true, float(alerts_true/attkInTestFile)*100)
+    print "L False Positive/False Alerts: %s, %.4f%%" % (alerts_false, float(alerts_false/alerts_all)*100)
+    print "L False Negative/Undetected Attacks: %s, %.4f%% " % ( false_neg, float(false_neg/attkInTestFile)*100 )
+    print "\nH True Positive/Detected Attacks: %s, %.4f%%" % (alerts_true, float(alerts_true/attkInTestFile)*100)
+    print "H True Negative/Normal conn correctly identified: %s, %.4f%%\n\n" % ( true_neg, float(true_neg/normalConns)*100)
 
 
 

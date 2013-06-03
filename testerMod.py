@@ -19,6 +19,9 @@ start_time = time()
 #fileRules = 'rules.rcd'
 #fileRules = 'rules_podfrTest.rcd'
 fileRules = 'rules_pod.rcd'
+#fileRules = 'rules_portsweep.rcd'
+#fileRules = 'rules_neptune.rcd'
+#fileRules = 'rules_teardrop.rcd'
 
 #fileTest = 'test_w1mon.list'
 #fileTest = 'w1_alltruth.list'
@@ -33,6 +36,9 @@ fileTest = 'wm_alltruth.list'
 #fileTest = 'test_pod207.list'
 
 attackType = 'pod'
+#attackType = 'portsweep'
+#attackType = 'neptune'
+#attackType = 'teardrop'
 attackType_strLength = len(attackType)
 
 attkInTestFile = 0.0
@@ -53,12 +59,15 @@ for i, line in enumerate(fileinput.input([fileRules])):
                 array[idx] = int(item) 
         rules.append(array)
 
+print "Rules from the training module:"
 for i in rules:
     print i
 # END I -----------------------------------------------------
 
 
 # II ---Read test audit data file ---------------------------
+
+print "** Loading test audit data, please be patient **"
 auditData = []
 #nosplit = []
 for line in fileinput.input([fileTest]):
@@ -107,6 +116,7 @@ for line in fileinput.input([fileTest]):
 
     auditData.append(line)
 
+print "** Done loading test audit data **"
 #for i, j in enumerate(auditData):
 #    print i, j
 
@@ -222,6 +232,9 @@ def testMatchData(dataRecord): #input is a test data record against rules
     #print "rule No.:", i 
 #    testMatchRule(j)
 
+print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+print "\nCommencing Test Module Simulation for %s attack\n" % attackType
+
 for i, j in enumerate(auditData):
     #print "rule No.:", i 
     testMatchData(j)
@@ -244,35 +257,49 @@ for i in alerts:
         normalConnWrongIden += 1
 
 
-if attkInTestFile > 0:
+if attkInTestFile > 0 :#and falseAlert > 0:
 
     testDataNo = len(auditData)
     normalConns = float(testDataNo - attkInTestFile)
     alerts_all = float(len(alerts))
-    alerts_false = float(falseAlert)
-    alerts_true = float(alerts_all - alerts_false)
-    false_neg = float(attkInTestFile - alerts_true)
-    true_neg = float(normalConns - normalConnWrongIden)
+    false_pos = float(falseAlert)
+    true_pos = float(alerts_all - false_pos)
+    false_neg = float(attkInTestFile - true_pos)
+    true_neg = float(normalConns - falseAlert)
+
+    accuracy = (true_pos + true_neg) / float(true_pos+false_pos+false_neg+true_neg)
+    precision = true_pos / float(true_pos+false_pos)
+    sensitivity = true_pos / float(true_pos+false_neg)
+    specificity = true_neg / float(true_neg+false_pos)
 
     print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+    print true_pos, true_neg, false_pos, false_neg
     print "Summary of the simulation: \n"
+    print "Attack Type: %s" % attackType
     print "Test Data records: %s\n" % testDataNo
     print "\nTotal Number of Attacks in Test Records: %s" % attkInTestFile
     print "All alerts: %s" % alerts_all
-    print "L False Positive/False Alerts: %s, %.4f%%" % (alerts_false, float(alerts_false/alerts_all)*100)
+    print "L False Positive/False Alerts: %s, %.4f%%" % (false_pos, float(false_pos/testDataNo)*100)
     print "L False Negative/Undetected Attacks: %s, %.4f%% " % ( false_neg, float(false_neg/attkInTestFile)*100 )
-    print "\nH True Positive/Detected Attacks: %s, %.4f%%" % (alerts_true, float(alerts_true/attkInTestFile)*100)
-    print "H True Negative/Normal conn correctly identified: %s, %.4f%%\n\n" % ( true_neg, float(true_neg/normalConns)*100)
+    print "\nH True Positive/Detected Attacks: %s, %.4f%%" % (true_pos, float(true_pos/attkInTestFile)*100)
+    print "H True Negative/Normal conn correctly identified: %s, %.4f%%" % ( true_neg, float(true_neg/normalConns)*100)
+
+    print "\nMeasurements ----------------"
+    print "accuracy: %s" % accuracy
+    print "precision: %s" % precision
+    print "sensitivity: %s" % sensitivity
+    print "specificity: %s" % specificity
+    print "\n\n"
 
 
-
-else:
+elif attkInTestFile == 0 or falseAlert == 0: #needs fix
 
     alerts_all = float(len(alerts))
-    alerts_false = float(falseAlert)
-    alerts_true = float(alerts_all - alerts_false)
-    false_neg = (attkInTestFile - alerts_true)    
+    false_pos = float(falseAlert)
+    true_pos = float(alerts_all - false_pos)
+    false_neg = (attkInTestFile - true_pos)    
 
+    print "MEH!"
     print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
     print "Summary of the simulation: \n"
     print "There is no %s attack in this test file" % attackType
@@ -280,7 +307,7 @@ else:
     print "\nTotal Number of Attacks in Test Records: %s" % attkInTestFile
     print "All alerts: %s" % alerts_all
     if alerts_all > 0:
-        print "False Positive/False Alerts: %s, %.4f%%" % (alerts_false, float(alerts_false/alerts_all)*100)
+        print "False Positive/False Alerts: %s, %.4f%%" % (false_pos, float(false_pos/alerts_all)*100)
     else:
         print "False Positive/False Alerts: %s, %.4f%%" % (0, 0)
     print "\nFalse Negative/Undetected Attacks: %s, %.4f%% " % (0, 0)

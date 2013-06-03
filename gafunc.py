@@ -253,8 +253,8 @@ def evalSupCon(individual):
         if fitness > 0:
             fitness = fitness - wildcard_deduct
 
-    #if wildcard == 0 and fitness > 0:
-    #    fitness = fitness - 0.001
+    if wildcard == 0 and fitness > 0:
+        fitness = fitness - 0.001
     return fitness,
     #return [(fitness,), A, AnB]
 

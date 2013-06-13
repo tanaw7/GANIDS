@@ -18,10 +18,11 @@ start_time = time()
 
 #fileRules = 'rules.rcd'
 #fileRules = 'rules_podfrTest.rcd'
-fileRules = 'rules_pod.rcd'
+#fileRules = 'rules_pod.rcd'
 #fileRules = 'rules_portsweep.rcd'
 #fileRules = 'rules_neptune.rcd'
 #fileRules = 'rules_teardrop.rcd'
+fileRules = 'rules_ipsweep.rcd'
 
 #fileTest = 'test_w1mon.list'
 #fileTest = 'w1_alltruth.list'
@@ -35,10 +36,11 @@ fileTest = 'wm_alltruth.list'
 
 #fileTest = 'test_pod207.list'
 
-attackType = 'pod'
+#attackType = 'pod'
 #attackType = 'portsweep'
 #attackType = 'neptune'
 #attackType = 'teardrop'
+attackType = 'ipsweep'
 attackType_strLength = len(attackType)
 
 attkInTestFile = 0.0

@@ -4,14 +4,14 @@
 n_pop = 800 #400# Number of individuals in the whole population
 
 if n_pop > 800:         # elites per attack type chosen for next gen
-    elitesNo = n_pop/100#n_pop/100#10
+    elitesNo = n_pop/50#n_pop/100#10
 else:
-    elitesNo = n_pop/100#n_pop/100 
+    elitesNo = n_pop/50#n_pop/100 
 
 sel_divisor = 1#4/3.0 #1 dividing factor for selection operator
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
-CXPB, enterMutation, MUTPB, NGEN = 0.8, 0.9, 0.9, 200#0.4, 0.25, 100
+CXPB, enterMutation, MUTPB, NGEN = 0.8, 0.4, 0.25, 400#0.9, 0.9, 200#
 
 wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
 wcw_switching = False
@@ -33,7 +33,7 @@ bestTopKnots = 100
 #--Ace Comparison options
 fitnessDiff_opt = True
 fitnessDiff_value = 0.001
-matchEliminate_opt = True
+matchEliminate_opt = False
 matchEliminate_AllowFields = 5 # in TopKnots filter
 
 mutateElitesWildcards = True     #mutate elites genes when there are wildcards
@@ -56,7 +56,7 @@ baseWeaklings = n_pop/100 #with high wildcardWeight, it ensure the chance of fin
 #fileName = 'w7_tcpdump.list'
 #fileName = 'mixed_pod_test.list'
 #fileName = 'pscan.list'
-fileName = 'bsm.list'
+#fileName = 'bsm.list'
 
 #for pod training
 #fileName = 'w1_thu.list' 
@@ -71,6 +71,15 @@ fileName = 'bsm.list'
 
 #for portsweep training
 #fileName = 'psw_w6_thu.list'
+
+#for ipsweep training
+#fileName = 'ipsw_w2_tue.list'
+#fileName = 'ipsw_w3_wed.list'
+#fileName = 'ipsw_w4_wed.list'
+#fileName = 'ipsw_w34_w.list'
+
+#for dict training
+fileName = 'dict_w6_thu.list'
 
 #for neptune training
 #fileName = 'nept_w1_wed.list'

@@ -1,0 +1,318 @@
+     1	import random           #for most of the things done here
+     2	import fileinput        #for reading an audit dataset
+     3	import bisect           #for mapping different weights for members in a list
+     4	import itertools        #for eliminating duplicate lists in a list
+     5	import re               #for multiple delimiters in dataset files
+     6	import copy             #for making an unshared copy
+     7	from time import time   #for counting the amount of time GANIDS runs
+     8	
+     9	
+    10	from deap import base
+    11	from deap import creator
+    12	from deap import tools
+    13	
+    14	start_time = time()
+    15	
+    16	#--CONTROL PANEL---------------------------------------
+    17	#------Modifiable variables (notable ones)----------------
+    18	
+    19	#fileRules = 'rules.rcd'
+    20	#fileRules = 'rules_podfrTest.rcd'
+    21	#fileRules = 'rules_pod.rcd'
+    22	#fileRules = 'rules_portsweep.rcd'
+    23	#fileRules = 'rules_neptune.rcd'
+    24	#fileRules = 'rules_teardrop.rcd'
+    25	fileRules = 'rules_ipsweep.rcd'
+    26	
+    27	#fileTest = 'test_w1mon.list'
+    28	#fileTest = 'w1_alltruth.list'
+    29	#fileTest = 'w2_alltruth.list'
+    30	fileTest = 'wm_alltruth.list'
+    31	#fileTest = 'test_w1_mon_truth.list' #pod
+    32	#fileTest = 'test_w1_tue_truth.list'
+    33	#fileTest = 'test_w1_wed_truth.list'
+    34	#fileTest = 'test_w1_thu_truth.list' #pod
+    35	#fileTest = 'test_w1_fri_truth.list'
+    36	
+    37	#fileTest = 'test_pod207.list'
+    38	
+    39	#attackType = 'pod'
+    40	#attackType = 'portsweep'
+    41	#attackType = 'neptune'
+    42	#attackType = 'teardrop'
+    43	attackType = 'ipsweep'
+    44	attackType_strLength = len(attackType)
+    45	
+    46	attkInTestFile = 0.0
+    47	#------------------------------------------------------
+    48	
+    49	auditData = []
+    50	rules = []
+    51	
+    52	# I ---Read Rules Files-------------------------------------
+    53	for i, line in enumerate(fileinput.input([fileRules])):
+    54	    line = line.rstrip('\r\n') # strip off the newline of each record
+    55	    if len(line) > 0:
+    56	        line = re.sub(' +', ' ', line)
+    57	        array = line.split(" ") # returns a list containing each item in the record
+    58	        del array[-1]
+    59	        for idx, item in enumerate(array):
+    60	            if idx != 4 and idx != 15 or item == '-1':
+    61	                array[idx] = int(item) 
+    62	        rules.append(array)
+    63	
+    64	print "Rules from the training module:"
+    65	for i in rules:
+    66	    print i
+    67	# END I -----------------------------------------------------
+    68	
+    69	
+    70	# II ---Read test audit data file ---------------------------
+    71	
+    72	print "** Loading test audit data, please be patient **"
+    73	auditData = []
+    74	#nosplit = []
+    75	for line in fileinput.input([fileTest]):
+    76	    line = line.rstrip('\r\n') # strip off the newline of each record
+    77	    #nosplit.append(line)
+    78	    if len(line) > 0:
+    79	        line = re.sub(' +', ' ', line)
+    80	        array = line.split(" ")
+    81	
+    82	        line = []
+    83	        #---identifier
+    84	        line.append(int(array[0]))
+    85	
+    86	        #---Duration
+    87	        line.append(int(array[3][0:2])) #append hour as gene into chromosome
+    88	        line.append(int(array[3][3:5])) #append minute
+    89	        line.append(int(array[3][6:8])) #append second
+    90	        #---Protocal
+    91	        line.append(array[4])
+    92	        #---Source Port
+    93	        if array[5] != '-':
+    94	            line.append(int(array[5]))
+    95	        else:
+    96	            line.append(0)
+    97	        #---Destination Port
+    98	        if array[6] != '-':
+    99	            line.append(int(array[6]))
+   100	        else:
+   101	            line.append(0)
+   102	        #---Source IP
+   103	        ip = array[7].split(".")
+   104	        line.append(int(ip[0])) #1st octet
+   105	        line.append(int(ip[1])) #2nd octet
+   106	        line.append(int(ip[2])) #3rd octet
+   107	        line.append(int(ip[3])) #4th octet
+   108	        #---Destination IP
+   109	        ip = array[8].split(".")
+   110	        line.append(int(ip[0])) #1st octet
+   111	        line.append(int(ip[1])) #2nd octet
+   112	        line.append(int(ip[2])) #3rd octet
+   113	        line.append(int(ip[3])) #4th octet
+   114	        #---Attack type
+   115	        line.append(array[10])
+   116	        if array[10][0:attackType_strLength] == attackType:
+   117	            attkInTestFile += 1
+   118	
+   119	    auditData.append(line)
+   120	
+   121	print "** Done loading test audit data **"
+   122	#for i, j in enumerate(auditData):
+   123	#    print i, j
+   124	
+   125	# END II --------------------------------------------------------------
+   126	
+   127	
+   128	# III -----------------------Match function----------------------------
+   129	
+   130	
+   131	match_cc = 0
+   132	match_at = 0
+   133	rule_no = 0
+   134	def testMatchRule(rule): #input is a rule against data records
+   135	    global match_cc
+   136	    global match_at
+   137	    global rule_no
+   138	
+   139	    rule_no += 1
+   140	
+   141	    #Nconnect = float(len(auditData))
+   142	    matched_lines = 0
+   143	    wildcard = 0
+   144	    matchConn = 0
+   145	    matchAttk = 0
+   146	    match_list = []
+   147	
+   148	    #for record in auditData:
+   149	    for record in auditData:
+   150	        matched_fields = 0
+   151	        for index, field in enumerate(record, start=0):
+   152	            if ((rule[index] == field) or (rule[index] == -1)) and index != 0:
+   153	                matched_fields = matched_fields + 1
+   154	                #print matched_fields
+   155	            #if (rule[index] == -1): #may not need
+   156	            #    wildcard += 1
+   157	            if index == 14 and matched_fields == 14: 
+   158	                matchConn += 1
+   159	                match_cc += 1
+   160	                #print "Matched Connection"
+   161	                #print match_cc
+   162	                match_list.append(record)
+   163	                #print "rule: ", rule
+   164	                #print "audit:", record
+   165	            if index == 14 and matched_fields == 15:
+   166	                matchAttk += 1
+   167	                match_at += 1
+   168	                #print "Matched Attack"
+   169	                #print match_at
+   170	
+   171	    if len(match_list) > 0:
+   172	        print "\n"
+   173	        print "-@ rule %s -@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@" % rule_no
+   174	        print rule
+   175	        
+   176	        print "Matched Connections below: "
+   177	        for i in match_list:
+   178	            print i
+   179	        print "Matched Connections No:", matchConn
+   180	    
+   181	    return "haha"
+   182	
+   183	alerts = []
+   184	
+   185	def testMatchData(dataRecord): #input is a test data record against rules
+   186	    global match_cc
+   187	    global match_at
+   188	    global rule_no
+   189	
+   190	    rule_no += 1
+   191	
+   192	    #Nconnect = float(len(auditData))
+   193	    matched_lines = 0
+   194	    matchRules = 0
+   195	    match_list = []
+   196	
+   197	    #for record in auditData:
+   198	    for record in rules:
+   199	        matched_fields = 0
+   200	        for index, field in enumerate(record, start=0):
+   201	            if ((dataRecord[index] == field) or (record[index] == -1)) and index != 0:
+   202	                matched_fields = matched_fields + 1
+   203	                #print matched_fields
+   204	            #if (rule[index] == -1): #may not need
+   205	            #    wildcard += 1
+   206	            if index == 14 and matched_fields == 14: 
+   207	                matchRules += 1
+   208	                match_cc += 1
+   209	                #print "Matched Rules"
+   210	                #print match_cc
+   211	                match_list.append(record)
+   212	
+   213	    if len(match_list) > 0:
+   214	
+   215	        alerts.append(dataRecord)
+   216	
+   217	        print "\n"
+   218	        print "-@ Test Data No. %s -@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@" % rule_no
+   219	        print dataRecord #[-1][0:3]
+   220	        
+   221	        print "Matched Rules below: "
+   222	        for i in match_list:
+   223	            print i
+   224	        print "Matched Rules No:", matchRules
+   225	    
+   226	    return "haha"
+   227	
+   228	# END III ----------------------------------------------------------------------------
+   229	
+   230	#print len(rules)
+   231	#print len(auditData)
+   232	
+   233	#for i, j in enumerate(rules):
+   234	    #print "rule No.:", i 
+   235	#    testMatchRule(j)
+   236	
+   237	print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+   238	print "\nCommencing Test Module Simulation for %s attack\n" % attackType
+   239	
+   240	for i, j in enumerate(auditData):
+   241	    #print "rule No.:", i 
+   242	    testMatchData(j)
+   243	
+   244	falseAlert = 0
+   245	normalConnWrongIden = 0
+   246	
+   247	print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+   248	print "\nConnections flagged by false alerts: "
+   249	for i in alerts:
+   250	    if i[-1][0:attackType_strLength] != attackType:
+   251	        print i
+   252	        falseAlert += 1
+   253	
+   254	print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+   255	print "\nNormal Connections wrongly identified as attacks: "
+   256	for i in alerts:
+   257	    if i[-1] == '-':
+   258	        print i
+   259	        normalConnWrongIden += 1
+   260	
+   261	
+   262	if attkInTestFile > 0 :#and falseAlert > 0:
+   263	
+   264	    testDataNo = len(auditData)
+   265	    normalConns = float(testDataNo - attkInTestFile)
+   266	    alerts_all = float(len(alerts))
+   267	    false_pos = float(falseAlert)
+   268	    true_pos = float(alerts_all - false_pos)
+   269	    false_neg = float(attkInTestFile - true_pos)
+   270	    true_neg = float(normalConns - falseAlert)
+   271	
+   272	    accuracy = (true_pos + true_neg) / float(true_pos+false_pos+false_neg+true_neg)
+   273	    precision = true_pos / float(true_pos+false_pos)
+   274	    sensitivity = true_pos / float(true_pos+false_neg)
+   275	    specificity = true_neg / float(true_neg+false_pos)
+   276	
+   277	    print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+   278	    print true_pos, true_neg, false_pos, false_neg
+   279	    print "Summary of the simulation: \n"
+   280	    print "Attack Type: %s" % attackType
+   281	    print "Test Data records: %s\n" % testDataNo
+   282	    print "\nTotal Number of Attacks in Test Records: %s" % attkInTestFile
+   283	    print "All alerts: %s" % alerts_all
+   284	    print "L False Positive/False Alerts: %s, %.4f%%" % (false_pos, float(false_pos/testDataNo)*100)
+   285	    print "L False Negative/Undetected Attacks: %s, %.4f%% " % ( false_neg, float(false_neg/attkInTestFile)*100 )
+   286	    print "\nH True Positive/Detected Attacks: %s, %.4f%%" % (true_pos, float(true_pos/attkInTestFile)*100)
+   287	    print "H True Negative/Normal conn correctly identified: %s, %.4f%%" % ( true_neg, float(true_neg/normalConns)*100)
+   288	
+   289	    print "\nMeasurements ----------------"
+   290	    print "accuracy: %s" % accuracy
+   291	    print "precision: %s" % precision
+   292	    print "sensitivity: %s" % sensitivity
+   293	    print "specificity: %s" % specificity
+   294	    print "\n\n"
+   295	
+   296	
+   297	elif attkInTestFile == 0 or falseAlert == 0: #needs fix
+   298	
+   299	    alerts_all = float(len(alerts))
+   300	    false_pos = float(falseAlert)
+   301	    true_pos = float(alerts_all - false_pos)
+   302	    false_neg = (attkInTestFile - true_pos)    
+   303	
+   304	    print "MEH!"
+   305	    print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
+   306	    print "Summary of the simulation: \n"
+   307	    print "There is no %s attack in this test file" % attackType
+   308	    print "Test Data records: %s\n" % len(auditData)
+   309	    print "\nTotal Number of Attacks in Test Records: %s" % attkInTestFile
+   310	    print "All alerts: %s" % alerts_all
+   311	    if alerts_all > 0:
+   312	        print "False Positive/False Alerts: %s, %.4f%%" % (false_pos, float(false_pos/alerts_all)*100)
+   313	    else:
+   314	        print "False Positive/False Alerts: %s, %.4f%%" % (0, 0)
+   315	    print "\nFalse Negative/Undetected Attacks: %s, %.4f%% " % (0, 0)
+   316	    print "True Positive/Detected Attacks: %s, %.4f%%\n\n" % (0, 0)
+   317	
+   318	

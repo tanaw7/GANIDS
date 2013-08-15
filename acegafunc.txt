@@ -1,0 +1,423 @@
+     1	import random           #for most of the things done here
+     2	import fileinput        #for reading an audit dataset
+     3	import bisect           #for mapping different weights for members in a list
+     4	import itertools        #for eliminating duplicate lists in a list
+     5	import re               #for multiple delimiters in dataset files
+     6	import copy             #for making an unshared copy
+     7	from time import time   #for counting the amount of time GANIDS runs
+     8	
+     9	
+    10	from deap import base
+    11	from deap import creator
+    12	from deap import tools
+    13	
+    14	from acegaconfig import *
+    15	
+    16	start_time = time()
+    17	
+    18	# I ------Read DARPA audit files---*done*try put this in individuals--
+    19	auditData = []
+    20	#nosplit = []
+    21	for line in fileinput.input([fileName]):
+    22	    line = line.rstrip('\r\n') # strip off the newline of each record
+    23	    #nosplit.append(line)
+    24	    if len(line) > 0:
+    25	        line = re.sub(' +', ' ', line)
+    26	        array = line.split(" ")
+    27	# Now array looks like this
+    28	#['1', '01/23/1998', '16:56:48', '00:01:26', 'telnet', '1754', '23',
+    29	# '192.168.1.30', '192.168.0.20', '0', '-']
+    30	
+    31	# Below we reconstruct the audit data to have chromosome-like structure.
+    32	        line = []
+    33	        #---Duration
+    34	        line.append(int(array[3][0:2])) #append hour as gene into chromosome
+    35	        line.append(int(array[3][3:5])) #append minute
+    36	        line.append(int(array[3][6:8])) #append second
+    37	        #---Protocal
+    38	        line.append(array[4])
+    39	        #---Source Port
+    40	        if array[5] != '-':
+    41	            line.append(int(array[5]))
+    42	        else:
+    43	            line.append(-1)
+    44	        #---Destination Port
+    45	        if array[6] != '-':
+    46	            line.append(int(array[6]))
+    47	        else:
+    48	            line.append(-1)
+    49	        #---Source IP
+    50	        ip = array[7].split(".")
+    51	        line.append(int(ip[0])) #1st octet
+    52	        line.append(int(ip[1])) #2nd octet
+    53	        line.append(int(ip[2])) #3rd octet
+    54	        line.append(int(ip[3])) #4th octet
+    55	        #---Destination IP
+    56	        ip = array[8].split(".")
+    57	        line.append(int(ip[0])) #1st octet
+    58	        line.append(int(ip[1])) #2nd octet
+    59	        line.append(int(ip[2])) #3rd octet
+    60	        line.append(int(ip[3])) #4th octet
+    61	        #---Attack type
+    62	        line.append(array[10])
+    63	
+    64	
+    65	    auditData.append(line)
+    66	
+    67	# return auditData #when put in a function
+    68	
+    69	#END I--------------------------------------------------------------
+    70	
+    71	# II -------find unique values in each field from audit data----
+    72	uniq_hour = set()
+    73	uniq_minute = set()
+    74	uniq_second = set()
+    75	uniq_protocol = set()
+    76	uniq_srcport = set()
+    77	uniq_desport = set()
+    78	
+    79	uniq_srcip_1stoct = set()
+    80	uniq_srcip_2ndoct = set()
+    81	uniq_srcip_3rdoct = set()
+    82	uniq_srcip_4thoct = set()
+    83	
+    84	uniq_desip_1stoct = set()
+    85	uniq_desip_2ndoct = set()
+    86	uniq_desip_3rdoct = set()
+    87	uniq_desip_4thoct = set()
+    88	
+    89	uniq_attack = set()
+    90	
+    91	for i in auditData:
+    92	    uniq_hour.add(i[0])
+    93	    uniq_minute.add(i[1])
+    94	    uniq_second.add(i[2])
+    95	    uniq_protocol.add(i[3])
+    96	    uniq_srcport.add(i[4])
+    97	    uniq_desport.add(i[5])
+    98	    uniq_srcip_1stoct.add(i[6])
+    99	    uniq_srcip_2ndoct.add(i[7])
+   100	    uniq_srcip_3rdoct.add(i[8])
+   101	    uniq_srcip_4thoct.add(i[9])
+   102	    uniq_desip_1stoct.add(i[10])
+   103	    uniq_desip_2ndoct.add(i[11])
+   104	    uniq_desip_3rdoct.add(i[12])
+   105	    uniq_desip_4thoct.add(i[13])
+   106	    #uniq_attack.add(i[14])
+   107	    if i[14] != '-':
+   108	        uniq_attack.add(i[14])
+   109	
+   110	print uniq_attack
+   111	
+   112	uniq_hour = list(uniq_hour)
+   113	uniq_minute = list(uniq_minute)
+   114	uniq_second = list(uniq_second)
+   115	uniq_protocol = list(uniq_protocol)
+   116	uniq_srcport = list(uniq_srcport)
+   117	uniq_desport = list(uniq_desport)
+   118	uniq_srcip_1stoct = list(uniq_srcip_1stoct)
+   119	uniq_srcip_2ndoct = list(uniq_srcip_2ndoct)
+   120	uniq_srcip_3rdoct = list(uniq_srcip_3rdoct)
+   121	uniq_srcip_4thoct = list(uniq_srcip_4thoct)
+   122	uniq_desip_1stoct = list(uniq_desip_1stoct)
+   123	uniq_desip_2ndoct = list(uniq_desip_2ndoct)
+   124	uniq_desip_3rdoct = list(uniq_desip_3rdoct)
+   125	uniq_desip_4thoct = list(uniq_desip_4thoct)
+   126	uniq_attack = list(uniq_attack)
+   127	
+   128	uniq_all = [] # List containing all uniqe_values in all fields
+   129	
+   130	uniq_all.append(uniq_hour)
+   131	uniq_all.append(uniq_minute)
+   132	uniq_all.append(uniq_second)
+   133	uniq_all.append(uniq_protocol)
+   134	uniq_all.append(uniq_srcport)
+   135	uniq_all.append(uniq_desport)
+   136	uniq_all.append(uniq_srcip_1stoct)
+   137	uniq_all.append(uniq_srcip_2ndoct)
+   138	uniq_all.append(uniq_srcip_3rdoct)
+   139	uniq_all.append(uniq_srcip_4thoct)
+   140	uniq_all.append(uniq_desip_1stoct)
+   141	uniq_all.append(uniq_desip_2ndoct)
+   142	uniq_all.append(uniq_desip_3rdoct)
+   143	uniq_all.append(uniq_desip_4thoct)
+   144	uniq_all.append(uniq_attack)
+   145	
+   146	#return uniq_all #when put in a function
+   147	
+   148	#END II----------------------------------------------------------------
+   149	
+   150	#-III -----Generator, Generate population: Build randomizor
+   151	#-for each field in a chromosome---------------------------------------
+   152	
+   153	creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+   154	creator.create("Individual", list, fitness=creator.FitnessMax)
+   155	
+   156	toolbox = base.Toolbox()
+   157	# Attribute generator
+   158	toolbox.register("attr_bool", random.randint, 0, 1)
+   159	
+   160	#---randomizor and chromosomizor
+   161	
+   162	def randomizor(breakpoints,items):
+   163	    score = random.random() * breakpoints[-1]
+   164	    i = bisect.bisect(breakpoints, score)
+   165	    return items[i]
+   166	
+   167	def chromosomizor(): #A function for building a chromosome.
+   168	    wcw = wildcardWeight
+   169	    an_individual = []
+   170	    for i, j in enumerate(uniq_all): # Using unique values from each field
+   171	        if i == (len(uniq_all)-1):
+   172	            wcw = 0.0 #we don't generate wildcard at attack field
+   173	        
+   174	        weight = {-1:wcw} #wcw
+   175	        for u in uniq_all[i]:
+   176	            #print len(uniq_all[i])
+   177	            # len()-1 because we don't need to count '-1' member
+   178	            if i == 14:
+   179	                weight[u] = (1 - wcw)/(len(uniq_all[i]))
+   180	            else:    
+   181	                weight[u] = (1 - wcw)/(len(uniq_all[i]))
+   182	        weight[-1] = wcw
+   183	        
+   184	        items = weight.keys()
+   185	        mysum = 0
+   186	        breakpoints = []
+   187	        for i in items:
+   188	            mysum += weight[i]
+   189	            breakpoints.append(mysum)
+   190	
+   191	        #print weight
+   192	        an_individual.append(randomizor(breakpoints,items))
+   193	
+   194	    return an_individual
+   195	
+   196	def empty_chromosome():
+   197	    an_individual = []
+   198	    return an_individual
+   199	
+   200	# Structure initializers
+   201	toolbox.register("attr_chromosomizor", chromosomizor)
+   202	toolbox.register("attr_empty_chromosome", empty_chromosome)
+   203	toolbox.register("individual", tools.initIterate,
+   204	                creator.Individual, toolbox.attr_chromosomizor)
+   205	toolbox.register("empty_individual", tools.initIterate,
+   206	                creator.Individual, toolbox.attr_empty_chromosome)
+   207	
+   208	toolbox.register("population", tools.initRepeat,
+   209	                    list, toolbox.individual)
+   210	
+   211	#END III -----------------------------------------------------------------
+   212	
+   213	#-IV ------Evaluation Functions---------------------------
+   214	# imported evalFuncs.py
+   215	
+   216	def evalSupCon(individual):
+   217	    Nconnect = float(len(auditData))
+   218	    matched_lines = 0.0
+   219	    wildcard = 0
+   220	    A = 0.0
+   221	    AnB = 0.0
+   222	    w1 = weightSupport #default 0.2
+   223	    w2 = weightConfidence #default 0.8
+   224	    for record in auditData:
+   225	        matched_fields = 0.0
+   226	
+   227	        for index, field in enumerate(record, start=0):
+   228	            if (individual[index] == field) or (individual[index] == -1):
+   229	                matched_fields = matched_fields + 1.0
+   230	            if (individual[index] == -1):
+   231	                wildcard += 1
+   232	            if index == 13 and matched_fields == 14.0: 
+   233	                A += 1
+   234	            if index == 14 and matched_fields == 15.0:
+   235	                AnB += 1
+   236	                            #Wei Li's paper says that each field should have different
+   237	                            #Matching weight, I think it's true, this could be improved.
+   238	    #print 'A:', A,
+   239	    #print 'AnB:', AnB
+   240	    support = AnB / Nconnect
+   241	    if A > 0:
+   242	        confidence = AnB / A
+   243	    else:
+   244	        confidence = 0.0
+   245	    
+   246	    #print support
+   247	    #print confidence
+   248	
+   249	    wildcard_deduct = wildcard * wildcardPenaltyWeight
+   250	    fitness = w1 * support + w2 * confidence
+   251	
+   252	    if (wildcardPenalty == True) and (wildcard >= wildcard_allowance):
+   253	        if fitness > 0:
+   254	            fitness = fitness - wildcard_deduct
+   255	
+   256	    if wildcard == 0 and fitness > 0:
+   257	        fitness = fitness - 0.001
+   258	    return fitness,
+   259	    #return [(fitness,), A, AnB]
+   260	
+   261	#END IV -------------------------------------------------------
+   262	
+   263	#-- V --- Selector (for elites) -------------------------------------
+   264	#Select 2 best individuals for each type of attack in generated old pop
+   265	#(So it select elites)
+   266	#len(uniq_attack) no. of attack types
+   267	#def selElites(pop):
+   268	
+   269	attkUniqs = uniq_attack
+   270	#attkUniqs.remove('-')
+   271	
+   272	def selElites(pop): #Selector function
+   273	
+   274	    attkTypes = len(attkUniqs) # 4, Numbers of attacks in integer
+   275	    attkPop = []
+   276	    elitesSub = []
+   277	    elitesAll = []
+   278	
+   279	    for i in xrange(attkTypes): #create lists within the attkPop list
+   280	        attkPop.append([]) #equals to the number of attkTypes
+   281	
+   282	    for i in xrange(attkTypes):
+   283	        for j, k in enumerate(pop):
+   284	            if k[-1] == attkUniqs[i]: #if last field is the same attack
+   285	                attkPop[i].append(k) #type then add to the attkPop
+   286	
+   287	    for i in attkPop:
+   288	        elitesSub.append(tools.selBest(i, elitesNo))
+   289	
+   290	
+   291	    for i in elitesSub: #appending all elites to elitesAll list
+   292	        i = list(i for i,_ in itertools.groupby(i)) #eliminate duplicate elites by attk type
+   293	        for j in i:
+   294	            elitesAll.append(j)
+   295	
+   296	    #for i in elitesAll:
+   297	    #    i = list(i for i,_ in itertools.groupby(i))
+   298	
+   299	    return elitesAll #This will be returned to create part of new
+   300	                     #population
+   301	
+   302	###For main selector we uses deap default tools.selRandom
+   303	
+   304	#END V ---------------------------------------------------------
+   305	
+   306	#-- VI Crossover operator---------------------------------------
+   307	# Uses deap default tools.cxTwoPoints
+   308	#END VI---------------------------------------------------------
+   309	
+   310	#-- VII Mutation operator---------------------------------------
+   311	unique_all_app = copy.deepcopy(uniq_all)
+   312	for i, field in enumerate(unique_all_app):
+   313	    if i != 14:
+   314	        field.append(-1)
+   315	
+   316	def mutator(individaul):
+   317	    mutant = toolbox.empty_individual()
+   318	    for i, field in enumerate(individaul):
+   319	        unique_types = unique_all_app
+   320	        if random.random() < MUTPB:
+   321	            #print field, unique_types[i], "\n",
+   322	            #remove original value from pool
+   323	            #unique_types[i].remove(field)  
+   324	            field = random.choice(unique_types[i])
+   325	            #print field, unique_types[i],
+   326	        mutant.append(field)
+   327	    return mutant
+   328	
+   329	def mutateWcardGene(individaul): #use to mutate wildcard genes of elites
+   330	    mutant = toolbox.clone(individaul)
+   331	    for i, field in enumerate(mutant):
+   332	        unique_types = uniq_all
+   333	        #print unique_types
+   334	        if (field == -1) and (random.random() < mutateElitesWildcards_PB):# and i != 3 and i != 4:
+   335	            mutant[i] = random.choice(unique_types[i])
+   336	            del mutant.fitness.values
+   337	            break
+   338	        del mutant.fitness.values
+   339	    return mutant
+   340	
+   341	def mutateWcardGene_rand(individaul):
+   342	    mutant = toolbox.clone(individaul)
+   343	    wcard_field = [] # get the positions of the wildcard genes
+   344	    for i, field in enumerate(mutant):
+   345	        unique_types = uniq_all
+   346	        if (field == -1):
+   347	            wcard_field.append(i)
+   348	    #print wcard_field
+   349	    if random.random() < mutateElitesWildcards_PB and len(wcard_field) != 0:
+   350	        idx = random.choice(wcard_field)
+   351	        mutant[idx] = random.choice(unique_types[idx])
+   352	        del mutant.fitness.values
+   353	    #print mutant
+   354	    return mutant
+   355	
+   356	def matchEliminate(ace, indi): 
+   357	
+   358	    matched_fields = 0
+   359	    for index, field in enumerate(indi, start=0):
+   360	        if (ace[index] == field):
+   361	            matched_fields = matched_fields + 1
+   362	
+   363	    return (matched_fields >= matchEliminate_AllowFields)
+   364	
+   365	def aceComparison(elites):
+   366	    supremes = []
+   367	
+   368	    for i in uniq_attack:
+   369	        space = []
+   370	        jail = []
+   371	        for j in elites:
+   372	            if j[-1] == i:
+   373	                space.append(j)
+   374	        global ace
+   375	        ace = tools.selBest(space, 1)
+   376	        ace = ace[0]
+   377	
+   378	        if fitnessDiff_opt == True:
+   379	            for idx, ind in enumerate(space):
+   380	                if (((ace.fitness.values[0] - ind.fitness.values[0]) <= fitnessDiff_value) and (idx > 0)):
+   381	                    jail.append(ind)
+   382	            for ind in jail:
+   383	                space.remove(ind)
+   384	
+   385	        if matchEliminate_opt == True:
+   386	            jail = []
+   387	            for idx, ind in enumerate(space):
+   388	                if matchEliminate(ace, ind) and ind != ace:
+   389	                    jail.append(ind)
+   390	            for ind in jail:
+   391	                space.remove(ind)
+   392	
+   393	        for i in space:
+   394	            supremes.append(i)
+   395	
+   396	    return supremes
+   397	
+   398	
+   399	#---------------------------------------------------------------
+   400	
+   401	# Operator registering
+   402	toolbox.register("evaluate", evalSupCon) #Support-Confidence
+   403	toolbox.register("mate", tools.cxTwoPoints) #cxTwoPoints should work
+   404	toolbox.register("mutate", mutator)
+   405	toolbox.register("selectE", selElites) #this is not main selection
+   406	                                      #it is only elites selection
+   407	
+   408	#toolbox.register("select", SOMENAME) #main selector needed
+   409	toolbox.register("select", tools.selRandom)
+   410	
+   411	#del later
+   412	popza = toolbox.population(n=200)
+   413	indy = popza[0]
+   414	
+   415	#---del later, this was simulated to gain understanding
+   416	# more of map(), zip()
+   417	#ass = selElites(popza)
+   418	fitneys = list(map(toolbox.evaluate, popza))
+   419	print fitneys[0]
+   420	print i
+   421	#for i, (k, j) in enumerate(zip(popza, (fitneys[i][0],))):
+   422	for k, j in zip(popza, fitneys):
+   423	    k.fitness.values = j

@@ -1,0 +1,100 @@
+     1	#--CONTROL PANEL---------------------------------------
+     2	#------Modifiable variables (notable ones)----------------
+     3	
+     4	n_pop = 800 #400# Number of individuals in the whole population
+     5	
+     6	if n_pop > 800:         # elites per attack type chosen for next gen
+     7	    elitesNo = n_pop/50#n_pop/100#10
+     8	else:
+     9	    elitesNo = n_pop/50#n_pop/100 
+    10	
+    11	sel_divisor = 1#4/3.0 #1 dividing factor for selection operator
+    12	
+    13	#CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
+    14	CXPB, enterMutation, MUTPB, NGEN = 0.8, 0.4, 0.25, 400#0.9, 0.9, 200#
+    15	
+    16	wildcardWeight = 0.9#0.8#0.9 #chance that a gene initialized is a wildcard
+    17	wcw_switching = False
+    18	wcw_a = 0.4
+    19	wcw_b = 0.9
+    20	wcw_swapGen = 20
+    21	
+    22	weightSupport, weightConfidence = 0.2,0.8#0.2, 0.8
+    23	
+    24	wildcardPenalty = True #only apply in loop to increase variety of good results
+    25	wildcardPenaltyWeight = 0.000000000001#0.00000001#0.000001#
+    26	wildcard_allowance = 0 # 1 to 15 #currently not in used nor implemented yet
+    27	
+    28	Result_numbers = n_pop#800 #800 #30
+    29	show_stats = True
+    30	show_elites = True
+    31	bestTopKnots = 100
+    32	
+    33	#--Ace Comparison options
+    34	fitnessDiff_opt = True
+    35	fitnessDiff_value = 0.001
+    36	matchEliminate_opt = False
+    37	matchEliminate_AllowFields = 5 # in TopKnots filter
+    38	
+    39	mutateElitesWildcards = True     #mutate elites genes when there are wildcards
+    40	mutateElitesWildcards_PB = 1 #result: better fitness
+    41	                               #good combination when wildcardWeight is high
+    42	
+    43	baseWeaklings = n_pop/100 #with high wildcardWeight, it ensure the chance of finding
+    44	                   #the maximum fitness much faster
+    45	
+    46	
+    47	#fileName = 'w1_mon.list' # Training datasets file
+    48	#fileName = 'w1_tue.list'
+    49	#fileName = 'w1_wed.list'
+    50	#fileName = 'w1_wednesday.list'
+    51	#fileName = 'w1_thu.list'
+    52	#fileName = 'w1_fri.list'
+    53	#fileName = 'mixed.list'
+    54	#fileName = 'mixed_all.list' 
+    55	#fileName = 'tcpdump.list'
+    56	#fileName = 'w7_tcpdump.list'
+    57	#fileName = 'mixed_pod_test.list'
+    58	#fileName = 'pscan.list'
+    59	fileName = 'bsm.list'
+    60	
+    61	#for pod training
+    62	#fileName = 'w1_thu.list' 
+    63	#fileName = 'w4_mon.list'
+    64	#fileName = 'w4_tue.list'
+    65	#fileName = 'w4_wed.list' 
+    66	#fileName = 'w5_tue.list'
+    67	#fileName = 'w5_thu.list' #uptil
+    68	#fileName = 'w6_tue.list'
+    69	#fileName = 'w6_thu.list'
+    70	#fileName = 'w7_tue.list'
+    71	
+    72	#for portsweep training
+    73	#fileName = 'psw_w6_thu.list'
+    74	
+    75	#for ipsweep training
+    76	#fileName = 'ipsw_w2_tue.list'
+    77	#fileName = 'ipsw_w3_wed.list'
+    78	#fileName = 'ipsw_w4_wed.list'
+    79	#fileName = 'ipsw_w34_w.list'
+    80	
+    81	#for dict training
+    82	#fileName = 'dict_w6_thu.list'
+    83	
+    84	#for neptune training
+    85	#fileName = 'nept_w1_wed.list'
+    86	#fileName = 'nept_w3_thu.list'
+    87	#fileName = 'nept_w4_tue.list'
+    88	#fileName = 'nept_w5_thu.list'
+    89	
+    90	#for teardrop training
+    91	#fileName = 'teard_w4_tue.list'
+    92	#fileName = 'teard_w5_mon.list'
+    93	
+    94	#fileName = 'test_allpod.list'
+    95	
+    96	#for nmap training
+    97	#fileName = 'w3_wed.list'
+    98	#fileName = 'w3_fri.list'
+    99	
+   100	#------------------------------------------------------

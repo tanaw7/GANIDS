@@ -8,6 +8,8 @@ if n_pop > 800:         # elites per attack type chosen for next gen
 else:
     elitesNo = n_pop/50#n_pop/100 
 
+elitesNo = 2
+
 sel_divisor = 1#4/3.0 #1 dividing factor for selection operator
 
 #CrossoverRate,individualMutationRate,GeneMutationRate,generationsToRun
@@ -28,13 +30,13 @@ wildcard_allowance = 0 # 1 to 15 #currently not in used nor implemented yet
 Result_numbers = n_pop#800 #800 #30
 show_stats = True
 show_elites = True
-bestTopKnots = 10
+bestTopKnots = 4
 
 #--Ace Comparison options
 fitnessDiff_opt = True
 fitnessDiff_value = 0.001
 matchEliminate_opt = False
-matchEliminate_AllowFields = 5 # in TopKnots filter
+matchEliminate_AllowFields = 6 # in TopKnots filter (Threshold)
 
 mutateElitesWildcards = True     #mutate elites genes when there are wildcards
 mutateElitesWildcards_PB = 1 #result: better fitness

@@ -184,10 +184,15 @@ def testMatchRule(rule): #input is a rule against data records
 
 alerts = []
 
+notMatchRules = 0
+truenotmatch_list = []
+
 def testMatchData(dataRecord): #input is a test data record against rules
     global match_cc
     global match_at
     global rule_no
+    global notMatchRules
+    global truenotmatch_list
 
     rule_no += 1
 
@@ -212,6 +217,7 @@ def testMatchData(dataRecord): #input is a test data record against rules
                 #print match_cc
                 match_list.append(record)
 
+
     if len(match_list) > 0:
 
         alerts.append(dataRecord)
@@ -225,6 +231,12 @@ def testMatchData(dataRecord): #input is a test data record against rules
             print i
         print "Matched Rules No:", matchRules
     
+    else:
+        if dataRecord[14] != attackType:
+            truenotmatch_list.append(dataRecord)
+        notMatchRules = notMatchRules + 1
+
+
     return "haha"
 
 # END III ----------------------------------------------------------------------------
@@ -265,16 +277,21 @@ if attkInTestFile > 0 :#and falseAlert > 0:
 
     testDataNo = len(auditData)
     normalConns = float(testDataNo - attkInTestFile)
+    print "\nNormal Connections: \n", normalConns
     alerts_all = float(len(alerts))
     false_pos = float(falseAlert)
     true_pos = float(alerts_all - false_pos)
-    false_neg = float(attkInTestFile - true_pos)
-    true_neg = float(normalConns - falseAlert)
+    #false_neg = float(attkInTestFile - true_pos)
+    true_neg = float(len(truenotmatch_list))
+    false_neg = float(notMatchRules - true_neg)
 
     accuracy = (true_pos + true_neg) / float(true_pos+false_pos+false_neg+true_neg)
     precision = true_pos / float(true_pos+false_pos)
     sensitivity = true_pos / float(true_pos+false_neg)
     specificity = true_neg / float(true_neg+false_pos)
+
+    #for i in truenotmatch_list:
+    #    print i, "\n"
 
     print "\n\n\n#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#"
     print true_pos, true_neg, false_pos, false_neg
@@ -283,18 +300,22 @@ if attkInTestFile > 0 :#and falseAlert > 0:
     print "Test Data records: %s\n" % testDataNo
     print "\nTotal Number of Attacks in Test Records: %s" % attkInTestFile
     print "All alerts: %s" % alerts_all
-    print "L False Positive/False Alerts: %s, %.4f%%" % (false_pos, float(false_pos/testDataNo)*100)
-    print "L False Negative/Undetected Attacks: %s, %.4f%% " % ( false_neg, float(false_neg/attkInTestFile)*100 )
-    print "\nH True Positive/Detected Attacks: %s, %.4f%%" % (true_pos, float(true_pos/attkInTestFile)*100)
-    print "H True Negative/Normal conn correctly identified: %s, %.4f%%" % ( true_neg, float(true_neg/normalConns)*100)
+    print "L False Positive/False Alerts: %s, %.4f%%" % (false_pos, float(false_pos/alerts_all)*100)
+    print "L False Negative/Undetected Attacks: %s, %.4f%% " % ( false_neg, float(false_neg/notMatchRules)*100 )
+    #print "\nH True Positive/Detected Attacks: %s, %.4f%%" % (true_pos, float(true_pos/attkInTestFile)*100)
+    print "\nH True Positive/Detected Attacks: %s, %.4f%%" % (true_pos, float(true_pos/alerts_all)*100)
+    print "H True Negative/Normal conn correctly identified: %s, %.4f%%" % ( true_neg, float(true_neg/notMatchRules)*100)
 
     print "\nMeasurements ----------------"
-    print "accuracy: %s" % accuracy
-    print "precision: %s" % precision
-    print "sensitivity: %s" % sensitivity
-    print "specificity: %s" % specificity
+    print "accuracy: %.6f" % accuracy
+    print "precision: %.6f" % precision
+    print "sensitivity: %.6f" % sensitivity
+    print "specificity: %.6f" % specificity
     print "\n\n"
 
+    print "Not matched Rules %s" % notMatchRules
+
+    print len(truenotmatch_list)
 
 elif attkInTestFile == 0 or falseAlert == 0: #needs fix
 

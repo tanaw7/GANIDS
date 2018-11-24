@@ -4,7 +4,7 @@ Please kindly obtain the published academic paper here: http://www.aicit.org/jci
 or directly here:
 http://www.aicit.org/JCIT/ppl/JCIT4159PPL.pdf
 
-Contact Info: tanapuch.wanwarang@dimensiondata.com / nik.muic@gmail.com
+Contact Info: nik.muic@gmail.com
 
 To run this program, you need to install deap (it's a python library).
 optional: install pypy, it's a flavor of python intepreter (Much faster and better performance).

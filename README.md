@@ -1,8 +1,6 @@
 Project Title: "Elitism Enhancements for Genetic Algorithm Based Network Intrusion Detection System" (AceGA)
 
-Please kindly obtain the published academic paper here: http://www.aicit.org/jcit/global/paper_detail.html?jname=JCIT&q=4159
-or directly here:
-http://www.aicit.org/JCIT/ppl/JCIT4159PPL.pdf
+Please kindly obtain the published academic paper here: https://scholar.google.co.th/citations?user=qT9n7AIAAAAJ&hl=en
 
 Contact Info: nik.muic@gmail.com
 
